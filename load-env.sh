@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if script is being sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "Error: This script must be sourced, not executed."
+    echo "Usage: source ./load-env.sh"
+    exit 1
+fi
+
 # Auto-detect environment from hostname if ENV is not set
 if [ -z "$ENV" ]; then
     HOSTNAME=$(hostname)
