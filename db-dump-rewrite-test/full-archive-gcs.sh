@@ -7,6 +7,13 @@ set -e
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/../load-env.sh"
 
+# Check if running in production environment
+if [ "$ENVIRONMENT" != "production" ]; then
+    echo "Error: This script can only be run in production"
+    echo "Current environment: $ENVIRONMENT"
+    exit 1
+fi
+
 # === CONFIG ===
 user="${DATABASE_USER}"
 db="${DATABASE_NAME}"

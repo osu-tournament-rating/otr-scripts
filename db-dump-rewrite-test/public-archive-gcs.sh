@@ -7,6 +7,13 @@ set -e
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/../load-env.sh"
 
+# Check if running in production environment
+if [ "$ENVIRONMENT" != "production" ]; then
+  echo "Error: This script can only be run in production"
+  echo "Current environment: $ENVIRONMENT"
+  exit 1
+fi
+
 # === CONFIG ===
 user="${DATABASE_USER}"
 db="${DATABASE_NAME}"
@@ -18,18 +25,18 @@ dest_file="${dest_folder}/postgres_${date}.gz"
 
 # Validate required environment variables
 if [ -z "${DATABASE_USER}" ]; then
-    echo "Error: DATABASE_USER not defined in environment file"
-    exit 1
+  echo "Error: DATABASE_USER not defined in environment file"
+  exit 1
 fi
 
 if [ -z "${DATABASE_NAME}" ]; then
-    echo "Error: DATABASE_NAME not defined in environment file"
-    exit 1
+  echo "Error: DATABASE_NAME not defined in environment file"
+  exit 1
 fi
 
 if [ -z "${DATABASE_CONTAINER}" ]; then
-    echo "Error: DATABASE_CONTAINER not defined in environment file"
-    exit 1
+  echo "Error: DATABASE_CONTAINER not defined in environment file"
+  exit 1
 fi
 
 # List of tables to include
@@ -50,14 +57,14 @@ done
 
 # Check if DUMP_DESTINATION is defined
 if [ -z "${DUMP_DESTINATION}" ]; then
-    echo "Error: DUMP_DESTINATION not defined in environment file"
-    exit 1
+  echo "Error: DUMP_DESTINATION not defined in environment file"
+  exit 1
 fi
 
 # Check if GCS_PUBLIC_BUCKET is defined
 if [ -z "${GCS_PUBLIC_BUCKET}" ]; then
-    echo "Error: GCS_PUBLIC_BUCKET not defined in environment file"
-    exit 1
+  echo "Error: GCS_PUBLIC_BUCKET not defined in environment file"
+  exit 1
 fi
 
 # Ensure the destination directory exists
