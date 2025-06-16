@@ -16,9 +16,29 @@ dest_folder="${DUMP_DESTINATION}"
 dest_file="${dest_folder}/postgres_${date}.gz"
 # === CONFIG ===
 
-# Use GCS_BUCKET from environment file
+# Validate required environment variables
+if [ -z "${DATABASE_USER}" ]; then
+    echo "Error: DATABASE_USER not defined in environment file"
+    exit 1
+fi
+
+if [ -z "${DATABASE_NAME}" ]; then
+    echo "Error: DATABASE_NAME not defined in environment file"
+    exit 1
+fi
+
+if [ -z "${DATABASE_CONTAINER}" ]; then
+    echo "Error: DATABASE_CONTAINER not defined in environment file"
+    exit 1
+fi
+
 if [ -z "${GCS_BUCKET}" ]; then
     echo "Error: GCS_BUCKET not defined in environment file"
+    exit 1
+fi
+
+if [ -z "${DUMP_DESTINATION}" ]; then
+    echo "Error: DUMP_DESTINATION not defined in environment file"
     exit 1
 fi
 
