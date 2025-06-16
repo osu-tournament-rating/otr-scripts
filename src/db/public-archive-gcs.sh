@@ -5,7 +5,7 @@ set -e
 
 # Source environment variables
 # shellcheck source=/dev/null
-source "$(dirname "${BASH_SOURCE[0]}")/../load-env.sh"
+source ~/otr-scripts/src/load-env.sh
 
 # Check if running in production environment
 if [ "$ENVIRONMENT" != "production" ]; then
