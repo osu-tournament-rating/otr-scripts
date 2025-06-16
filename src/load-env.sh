@@ -56,4 +56,22 @@ while IFS='=' read -r key value; do
 
 done <"$ENV_FILE"
 
+# Load secrets if they exist
+SECRETS_FILE="env/secrets.env"
+if [ -f "$SECRETS_FILE" ]; then
+    echo "Loading secrets from: $SECRETS_FILE"
+    while IFS='=' read -r key value; do
+        # Skip empty lines and comments
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        # Remove leading/trailing whitespace
+        key=$(echo "$key" | xargs)
+        value=$(echo "$value" | xargs)
+        # Export the variable
+        export "$key=$value"
+    done <"$SECRETS_FILE"
+else
+    echo "Warning: No secrets file found at $SECRETS_FILE"
+    echo "If you need to use secrets, copy env/secrets.template.env to env/secrets.env and populate it with actual values."
+fi
+
 echo "Loaded environment: $ENVIRONMENT"
