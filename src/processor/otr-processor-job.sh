@@ -2,7 +2,7 @@
 
 # Source environment variables
 # shellcheck source=/dev/null
-source ~/otr-scripts/src/load-env.sh
+source "${HOME}/otr-scripts/src/load-env.sh"
 
 echo 'Stopping dataworkerservice'
 
