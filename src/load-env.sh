@@ -24,7 +24,7 @@ if [ -z "$ENV" ]; then
 fi
 
 # Load shared properties
-SHARED_ENV_FILE="${HOME}/otr-scripts/env/shared.env"
+SHARED_ENV_FILE="${HOME}/otr-scripts/src/env/shared.env"
 if [ -f "$SHARED_ENV_FILE" ]; then
     while IFS='=' read -r key value; do
         # Skip empty lines and comments
@@ -37,7 +37,7 @@ if [ -f "$SHARED_ENV_FILE" ]; then
     done <"$SHARED_ENV_FILE"
 fi
 
-ENV_FILE="${HOME}/otr-scripts/env/${ENV}.env"
+ENV_FILE="${HOME}/otr-scripts/src/env/${ENV}.env"
 
 if [ ! -f "$ENV_FILE" ]; then
     echo "Error: Environment file not found: $ENV_FILE"
@@ -57,7 +57,7 @@ while IFS='=' read -r key value; do
 done <"$ENV_FILE"
 
 # Load secrets if they exist
-SECRETS_FILE="${HOME}/otr-scripts/env/secrets.env"
+SECRETS_FILE="${HOME}/otr-scripts/src/env/secrets.env"
 if [ -f "$SECRETS_FILE" ]; then
     echo "Loading secrets from: $SECRETS_FILE"
     while IFS='=' read -r key value; do
@@ -71,7 +71,7 @@ if [ -f "$SECRETS_FILE" ]; then
     done <"$SECRETS_FILE"
 else
     echo "Warning: No secrets file found at $SECRETS_FILE"
-    echo "If you need to use secrets, copy ${HOME}/otr-scripts/env/secrets.template.env to ${HOME}/otr-scripts/env/secrets.env and populate it with actual values."
+    echo "If you need to use secrets, copy ${HOME}/otr-scripts/src/env/secrets.template.env to ${HOME}/otr-scripts/src/env/secrets.env and populate it with actual values."
 fi
 
 echo "Loaded environment: $ENVIRONMENT"

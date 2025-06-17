@@ -61,10 +61,10 @@ echo "Database dump created at ${dest_file}"
 # Copying to cloud storage
 echo "Copying to cloud storage"
 if gcloud storage cp "${dest_file}" "gs://${GCS_BUCKET}"; then
-  echo "Files uploaded to Google Cloud Storage bucket!"
+    echo "Files uploaded to Google Cloud Storage bucket!"
 else
-  echo "Failed to upload files to Google Cloud Storage bucket!" >&2
-  exit 1
+    echo "Failed to upload files to Google Cloud Storage bucket!" >&2
+    exit 1
 fi
 
 # Cleanup
