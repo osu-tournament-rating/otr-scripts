@@ -72,8 +72,10 @@ mkdir -p "${dest_folder}"
 
 # Dump
 {
-  docker exec "${container}" pg_dump -s -c --if-exists "${exclude_args}" -U "${user}" "${db}"
-  docker exec "${container}" pg_dump -a --disable-triggers "${exclude_args}" -U "${user}" "${db}"
+  # shellcheck disable=SC2086
+  docker exec "${container}" pg_dump -s -c --if-exists ${exclude_args} -U "${user}" "${db}"
+  # shellcheck disable=SC2086
+  docker exec "${container}" pg_dump -a --disable-triggers ${exclude_args} -U "${user}" "${db}"
 } | gzip >"${dest_file}"
 
 echo "Database dump created at ${dest_file}"
