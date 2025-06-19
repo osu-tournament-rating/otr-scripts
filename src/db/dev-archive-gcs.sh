@@ -18,9 +18,9 @@ fi
 user="${DATABASE_USER}"
 db="${DATABASE_NAME}"
 container="${DATABASE_CONTAINER}"
-date=$(date '+%y_%m_%d_%H_%M_%S')
+date=$(date '+%Y_%m_%d_%H_%M_%S')
 dest_folder="${DUMP_DESTINATION}"
-dest_file="${dest_folder}/postgres_dev_${date}.gz"
+dest_file="${dest_folder}/otr-dev-replica_${date}.gz"
 # === CONFIG ===
 
 # Validate required environment variables
