@@ -22,7 +22,7 @@ echo "Starting database restore process for ${ENVIRONMENT} environment..."
 
 # Get latest file from GCS bucket
 echo "Fetching latest file from GCS bucket ${GCS_BUCKET}..."
-LATEST_FILE=$(gcloud storage ls "gs://${GCS_BUCKET}" | sort | tail -n 1)
+LATEST_FILE=$(gcloud storage ls -l "gs://${GCS_BUCKET}" | sort -k2 -r | head -n1 | awk '{print $3}')
 if [ -z "${LATEST_FILE}" ]; then
     echo "Error: No files found in bucket ${GCS_BUCKET}"
     exit 1
