@@ -39,8 +39,8 @@ if [ -z "${DATABASE_CONTAINER}" ]; then
   exit 1
 fi
 
-# Tables to exclude from the dump
-excluded_tables=(
+# Tables to exclude data from (but keep schema)
+excluded_data_tables=(
   logs
   o_auth_clients
   o_auth_client_admin_note
@@ -48,10 +48,10 @@ excluded_tables=(
   users
 )
 
-# Build the --exclude-table arguments
-exclude_args=""
-for table in "${excluded_tables[@]}"; do
-  exclude_args+=" --exclude-table=${table}"
+# Build the --exclude-table-data arguments
+exclude_data_args=""
+for table in "${excluded_data_tables[@]}"; do
+  exclude_data_args+=" --exclude-table-data=${table}"
 done
 
 # Check if DUMP_DESTINATION is defined
@@ -72,10 +72,11 @@ mkdir -p "${dest_folder}"
 
 # Dump
 {
+  # Dump complete schema for all tables
+  docker exec "${container}" pg_dump -s -c --if-exists -U "${user}" "${db}"
+  # Dump data for all tables except the excluded ones
   # shellcheck disable=SC2086
-  docker exec "${container}" pg_dump -s -c --if-exists ${exclude_args} -U "${user}" "${db}"
-  # shellcheck disable=SC2086
-  docker exec "${container}" pg_dump -a --disable-triggers ${exclude_args} -U "${user}" "${db}"
+  docker exec "${container}" pg_dump -a --disable-triggers ${exclude_data_args} -U "${user}" "${db}"
 } | gzip >"${dest_file}"
 
 echo "Database dump created at ${dest_file}"
