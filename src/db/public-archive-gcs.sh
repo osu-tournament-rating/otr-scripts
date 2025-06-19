@@ -94,4 +94,8 @@ echo "Removing local dump file"
 rm "${dest_folder}"/*.gz
 echo "Cleared all *.gz files from ${dest_folder}"
 
+# Generate index page
+echo "Generating index page for public dumps..."
+"${HOME}/otr-scripts/src/public-dump-web/generate-index.sh"
+
 echo "Script completed successfully."
