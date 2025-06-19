@@ -20,7 +20,7 @@ db="${DATABASE_NAME}"
 container="${DATABASE_CONTAINER}"
 date=$(date '+%y_%m_%d_%H_%M_%S')
 dest_folder="${DUMP_DESTINATION}"
-dest_file="${dest_folder}/postgres_${date}.gz"
+dest_file="${dest_folder}/postgres_public_archive_${date}.gz"
 # === CONFIG ===
 
 # Validate required environment variables
