@@ -46,7 +46,7 @@ tables=(
   matches
   games
   game_scores
-  player_highest_ranks
+  player_osu_ruleset_data
 )
 
 # Build the --table arguments
