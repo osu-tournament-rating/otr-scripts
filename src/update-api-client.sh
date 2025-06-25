@@ -247,7 +247,19 @@ handle_versioning_and_publishing() {
   local do_publish_choice
   read -r -p "$confirm_publish_prompt" do_publish_choice
   if [[ "${do_publish_choice,,}" == "y" ]]; then
-    execute_step "Publishing '$PACKAGE_NAME' to npm" npm publish
+    # Determine if this is a pre-release version and extract the tag
+    local npm_publish_args=()
+    local version_to_check="${NEW_VERSION:-$(node -p "require('./package.json').version" 2>/dev/null)}"
+    
+    # Check if version contains a pre-release identifier (e.g., 1.0.0-dev.1, 2.1.0-beta.3)
+    if [[ "$version_to_check" =~ ^[0-9]+\.[0-9]+\.[0-9]+-([a-zA-Z]+)(\.[0-9]+)?$ ]]; then
+      local prerelease_tag="${BASH_REMATCH[1]}"
+      npm_publish_args=("--tag" "$prerelease_tag")
+      execute_step "Publishing '$PACKAGE_NAME' to npm with tag '$prerelease_tag'" npm publish "${npm_publish_args[@]}"
+    else
+      execute_step "Publishing '$PACKAGE_NAME' to npm" npm publish
+    fi
+    
     PUBLISHED_TO_NPM=true
     # If NEW_VERSION is empty here but we published, it implies current version was published
     log_success "'$PACKAGE_NAME'${NEW_VERSION:+@$NEW_VERSION} published successfully!"
