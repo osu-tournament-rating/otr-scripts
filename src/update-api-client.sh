@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Configuration - modify these paths as needed
-readonly API_DIR="${API_DIR:-$HOME/Documents/code/git/otr-api/API}"
-readonly CLIENTS_DIR="${CLIENTS_DIR:-$HOME/Documents/code/git/otr-api-clients}"
+readonly API_DIR="${API_DIR:-$HOME/Documents/code/git/otr/otr-api/API}"
+readonly CLIENTS_DIR="${CLIENTS_DIR:-$HOME/Documents/code/git/otr/otr-api-clients}"
 readonly TS_CLIENT_DIR="${TS_CLIENT_DIR:-$CLIENTS_DIR/src/ts}"
 readonly SWAGGER_OUTPUT_PATH="${API_DIR}/bin/Debug/net9.0/swagger.json"
 
