@@ -1,3 +1,4 @@
 # Environment secrets
 src/env/secrets.env
 CLAUDE.md
+.vscode/
