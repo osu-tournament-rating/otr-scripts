@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -o pipefail
 
 # Source environment variables
 # shellcheck source=/dev/null
@@ -22,7 +23,15 @@ echo "Starting database restore process for ${ENVIRONMENT} environment..."
 
 # Get latest file from GCS bucket
 echo "Fetching latest file from GCS bucket ${GCS_BUCKET}..."
-LATEST_FILE=$(gcloud storage ls -l "gs://${GCS_BUCKET}" | sort -k2 -r | head -n1 | awk '{print $3}')
+# Filter out non-object lines and capture the timestamp with the object URI,
+# then sort by timestamp in descending order to find the most recent dump.
+LATEST_ENTRY=$(gcloud storage ls -l "gs://${GCS_BUCKET}" \
+    | awk 'NF >= 3 && $NF ~ /^gs:\/\// {print $(NF-1) " " $NF}' \
+    | sort -k1,1r \
+    | head -n1)
+
+LATEST_FILE=$(awk '{print $2}' <<<"${LATEST_ENTRY}")
+
 if [ -z "${LATEST_FILE}" ]; then
     echo "Error: No files found in bucket ${GCS_BUCKET}"
     exit 1
