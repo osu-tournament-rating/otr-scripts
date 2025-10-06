@@ -47,6 +47,7 @@ tables=(
   games
   game_scores
   player_osu_ruleset_data
+  __drizzle_migrations
 )
 
 # Build the --table arguments
