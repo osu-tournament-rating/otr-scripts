@@ -41,13 +41,13 @@ fi
 
 # List of tables to include
 tables=(
-  players
-  tournaments
-  matches
-  games
-  game_scores
-  player_osu_ruleset_data
-  __drizzle_migrations
+  public.players
+  public.tournaments
+  public.matches
+  public.games
+  public.game_scores
+  public.player_osu_ruleset_data
+  drizzle.__drizzle_migrations
 )
 
 # Build the --table arguments
