@@ -41,13 +41,18 @@ fi
 
 # List of tables to include
 tables=(
+  drizzle.__drizzle_migrations
+  public.beatmap_attributes
+  public.beatmaps
+  public.beatmapsets
+  public.game_scores
+  public.games
+  public.join_beatmap_creators
+  public.join_pooled_beatmaps
+  public.matches
+  public.player_osu_ruleset_data
   public.players
   public.tournaments
-  public.matches
-  public.games
-  public.game_scores
-  public.player_osu_ruleset_data
-  drizzle.__drizzle_migrations
 )
 
 # Build the --table arguments
