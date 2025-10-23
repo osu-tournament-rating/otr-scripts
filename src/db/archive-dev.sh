@@ -41,16 +41,16 @@ fi
 
 # Tables to exclude data from (but keep schema)
 excluded_data_tables=(
-  api_keys
-  auth_accounts
-  auth_sessions
-  auth_users
-  auth_verifications
-  game_audits
-  game_score_audits
-  logs
-  match_audits
-  tournament_audits
+  public.api_keys
+  public.auth_accounts
+  public.auth_sessions
+  public.auth_users
+  public.auth_verifications
+  public.game_audits
+  public.game_score_audits
+  public.logs
+  public.match_audits
+  public.tournament_audits
 )
 
 # Build the --exclude-table-data arguments
