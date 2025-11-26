@@ -86,9 +86,21 @@ mkdir -p "${dest_folder}"
 
 echo "Database dump created at ${dest_file}"
 
+# Generate GPG signature
+sig_file="${dest_file}.sig"
+echo "Generating GPG signature..."
+gpg --detach-sign --armor --output "${sig_file}" "${dest_file}"
+echo "Signature created at ${sig_file}"
+
+# Generate SHA-256 checksum
+sha_file="${dest_file}.sha256"
+echo "Generating SHA-256 checksum..."
+sha256sum "${dest_file}" | sed "s|${dest_folder}/||" > "${sha_file}"
+echo "Checksum created at ${sha_file}"
+
 # Copying to cloud storage
 echo "Copying to cloud storage"
-if gcloud storage cp "${dest_file}" "gs://${GCS_PUBLIC_BUCKET}"; then
+if gcloud storage cp "${dest_file}" "${sig_file}" "${sha_file}" "gs://${GCS_PUBLIC_BUCKET}"; then
   echo "Files uploaded to Google Cloud Storage bucket!"
 else
   echo "Failed to upload files to Google Cloud Storage bucket!" >&2
@@ -96,9 +108,9 @@ else
 fi
 
 # Cleanup
-echo "Removing local dump file"
-rm "${dest_folder}"/*.gz
-echo "Cleared all *.gz files from ${dest_folder}"
+echo "Removing local files"
+rm "${dest_folder}"/*.gz "${dest_folder}"/*.sig "${dest_folder}"/*.sha256
+echo "Cleared temporary files from ${dest_folder}"
 
 # Generate index page
 echo "Generating index page for public dumps..."
