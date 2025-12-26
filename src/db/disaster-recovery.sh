@@ -21,14 +21,31 @@ fi
 
 echo "Starting database restore process for ${ENVIRONMENT} environment..."
 
-# Get latest file from GCS bucket
+# Get latest file from GCS bucket with retry logic
 echo "Fetching latest file from GCS bucket ${GCS_BUCKET}..."
-# Filter out non-object lines and capture the timestamp with the object URI,
-# then sort by timestamp in descending order to find the most recent dump.
-LATEST_ENTRY=$(gcloud storage ls -l "gs://${GCS_BUCKET}" \
-    | awk 'NF >= 3 && $NF ~ /^gs:\/\// {print $(NF-1) " " $NF}' \
-    | sort -k1,1r \
-    | head -n1)
+
+MAX_RETRIES=3
+RETRY_DELAY=5
+TIMEOUT_SECONDS=30
+
+for ((i=1; i<=MAX_RETRIES; i++)); do
+    # Filter out non-object lines and capture the timestamp with the object URI,
+    # then sort by timestamp in descending order to find the most recent dump.
+    LATEST_ENTRY=$(timeout ${TIMEOUT_SECONDS} gcloud storage ls -l "gs://${GCS_BUCKET}" 2>&1 \
+        | awk 'NF >= 3 && $NF ~ /^gs:\/\// {print $(NF-1) " " $NF}' \
+        | sort -k1,1r \
+        | head -n1) && break
+
+    if [ $i -lt $MAX_RETRIES ]; then
+        echo "Warning: GCS listing attempt $i failed or timed out. Retrying in ${RETRY_DELAY}s..."
+        sleep $RETRY_DELAY
+        RETRY_DELAY=$((RETRY_DELAY * 2))
+    else
+        echo "Error: Failed to list GCS bucket after $MAX_RETRIES attempts"
+        echo "Check: gcloud auth list, network connectivity, and bucket permissions"
+        exit 1
+    fi
+done
 
 LATEST_FILE=$(awk '{print $2}' <<<"${LATEST_ENTRY}")
 
