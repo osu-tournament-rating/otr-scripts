@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+        description: "Environment to deploy to"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+
+    steps:
+      - name: Pull latest changes
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /home/stage/otr-scripts
+            git pull
