@@ -58,13 +58,45 @@ docker exec "${container}" pg_dump -c --if-exists -U "${user}" "${db}" | gzip >"
 
 echo "Database dump created at ${dest_file}"
 
+# Compute checksum of new dump
+new_checksum=$(sha256sum "${dest_file}" | awk '{print $1}')
+echo "New dump checksum: ${new_checksum}"
+
+# Fetch previous checksum from GCS (if exists)
+checksum_file="gs://${GCS_BUCKET}/latest-full.sha256"
+previous_checksum=""
+if previous_checksum=$(gcloud storage cat "${checksum_file}" 2>/dev/null); then
+    echo "Previous dump checksum: ${previous_checksum}"
+else
+    echo "No previous checksum found (first backup or checksum file missing)"
+fi
+
+# Skip upload if dump is identical to previous
+if [ -n "${previous_checksum}" ] && [ "${new_checksum}" = "${previous_checksum}" ]; then
+    echo "Dump is identical to previous backup"
+    echo "Skipping upload."
+    rm "${dest_file}"
+    echo "Script completed - no new backup needed."
+    exit 0
+fi
+
+echo "Dump differs from previous backup, proceeding with upload..."
+
 # Copying to cloud storage
 echo "Copying to cloud storage"
 if gcloud storage cp "${dest_file}" "gs://${GCS_BUCKET}"; then
-    echo "Files uploaded to Google Cloud Storage bucket!"
+    echo "Dump uploaded to Google Cloud Storage bucket!"
 else
-    echo "Failed to upload files to Google Cloud Storage bucket!" >&2
+    echo "Failed to upload dump to Google Cloud Storage bucket!" >&2
     exit 1
+fi
+
+# Update checksum tracking file
+echo "Updating checksum tracking file..."
+if echo "${new_checksum}" | gcloud storage cp - "${checksum_file}"; then
+    echo "Checksum file updated."
+else
+    echo "Warning: Failed to update checksum file. Next backup will not be deduplicated." >&2
 fi
 
 # Cleanup
