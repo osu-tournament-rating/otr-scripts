@@ -29,10 +29,10 @@ RETRY_DELAY=5
 TIMEOUT_SECONDS=30
 
 for ((i=1; i<=MAX_RETRIES; i++)); do
-    # Filter out non-object lines and capture the timestamp with the object URI,
+    # Filter out non-object lines and non-.gz files, capture the timestamp with the object URI,
     # then sort by timestamp in descending order to find the most recent dump.
     LATEST_ENTRY=$(timeout ${TIMEOUT_SECONDS} gcloud storage ls -l "gs://${GCS_BUCKET}" 2>&1 \
-        | awk 'NF >= 3 && $NF ~ /^gs:\/\// {print $(NF-1) " " $NF}' \
+        | awk 'NF >= 3 && $NF ~ /^gs:\/\/.*\.gz$/ {print $(NF-1) " " $NF}' \
         | sort -k1,1r \
         | head -n1) && break
 
