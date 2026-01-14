@@ -14,6 +14,5 @@ echo "Running otr-processor:${TAG} via docker"
 
 docker pull "stagecodes/otr-processor:${TAG}"
 docker run --network host -e CONNECTION_STRING="postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/${DATABASE_NAME}" -e "RABBITMQ_URL=${RABBITMQ_URL}" -e RUST_LOG=info "stagecodes/otr-processor:${TAG}"
-docker rmi "stagecodes/otr-processor:${TAG}"
 
 echo 'Finished'
