@@ -2,16 +2,6 @@ osu! Tournament Rating (o!TR) Dataset Terms of Use
 
 By accessing or using this dataset, you agree to the following terms.
 
-
-Permitted Uses
-
-This dataset may be used for:
-
-- Testing, developing, or contributing to the o!TR repositories located at this URL: https://github.com/osu-tournament-rating
-- Validating tournament data or inspecting historical records for verification purposes
-- Any other personal research or analysis (non-commercial) that is not expressly prohibited below.
-
-
 Requirements
 
 1. Attribution
@@ -20,13 +10,5 @@ Any permitted use of this dataset must include clear and visible credit to the o
 2. No Impersonation
 You may not use this dataset in any way that implies affiliation with, endorsement by, or official representation of o!TR without explicit written permission.
 
-3. No Competing Services
-You may not use this dataset to create, operate, or distribute applications or services that replicate, compete with, or substitute our services without explicit written permission.
-
-4. Redistribution
+3. Redistribution
 You may re-host, republish, or redistribute this dataset exactly as-is, provided a copy of these terms are included with the copies and all checksums are included and unmodified.
-
-
-Permission for Other Uses
-
-Uses not explicitly permitted above require prior written approval. Contact Stage (https://osu.ppy.sh/users/8191845) with your intended use case.
