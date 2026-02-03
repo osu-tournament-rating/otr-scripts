@@ -1,20 +1,12 @@
 # otr-scripts
 
-Infrastructure automation and operational scripts for the osu! Tournament Rating
-(o!TR) platform. Handles database backup/archival, API client generation, rating
-processor execution, and public data exports.
+Infrastructure automation and operational scripts for the osu! Tournament Rating (o!TR) platform. Handles database backup/archival, rating processor execution, and public data exports.
 
 ## Dependencies
 
 - Docker
 - Google Cloud SDK (gcloud)
 - GPG (for public dump signatures)
-
-### API Client Script
-
-- .NET SDK
-- Node.js & npm
-- NSwag CLI
 
 ## Configuration
 
@@ -89,74 +81,9 @@ ENV=staging source load-env.sh
 
 ## Data Protection
 
-### Excluded from Dev Replica
-
-`archive-dev.sh` exports complete schema but excludes data from these tables:
-
-- `public.api_keys`
-- `public.auth_accounts`
-- `public.auth_sessions`
-- `public.auth_users`
-- `public.auth_verifications`
-- `public.game_audits`
-- `public.game_score_audits`
-- `public.logs`
-- `public.match_audits`
-- `public.tournament_audits`
-
-### Public Replica Whitelist
-
-`archive-public.sh` only includes these tables:
-
-- `drizzle.__drizzle_migrations`
-- `public.beatmap_attributes`
-- `public.beatmaps`
-- `public.beatmapsets`
-- `public.game_scores`
-- `public.games`
-- `public.join_beatmap_creators`
-- `public.join_pooled_beatmaps`
-- `public.matches`
-- `public.player_osu_ruleset_data`
-- `public.players`
-- `public.tournaments`
+- Inspect `src/db/archive-public.sh` to see the full list of tables included in the dump.
+- Inspect `src/db/archive-dev.sh` to see which tables are excluded from dumps provided to devs on the team.
 
 ### Terms of Use
 
 See `src/public-dump-web/terms-of-use.txt`.
-
-## Command Reference
-
-All commands assume you're in `~/otr-scripts/src/`:
-
-```bash
-# Load environment (required before running any script)
-source load-env.sh
-
-# Override environment manually
-ENV=staging source load-env.sh
-
-# Database operations (production-only)
-bash db/archive-full.sh
-bash db/archive-dev.sh
-bash db/archive-public.sh
-bash db/import-dump.sh <dump.gz> [container]
-bash db/disaster-recovery.sh
-
-# Run rating processor
-bash processor/otr-processor-job.sh
-
-# Generate and publish API client
-./update-api-client.sh
-```
-
-## Script Patterns
-
-All scripts follow these conventions:
-
-- `set -e` for immediate exit on error
-- Source `load-env.sh` at the start
-- Validate required environment variables
-- Production scripts check `$ENVIRONMENT == "production"`
-- Use `docker exec` for PostgreSQL operations
-- Upload to GCS buckets specified in environment config
