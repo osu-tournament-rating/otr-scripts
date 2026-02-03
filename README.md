@@ -81,22 +81,6 @@ ENV=staging source load-env.sh
 |--------|-------------|
 | `otr-processor-job.sh` | Execute otr-processor Docker container |
 
-### API Client Generation (`src/update-api-client.sh`)
-
-Generates TypeScript API client from otr-api Swagger spec:
-
-1. Runs `dotnet run --swagger-to-file` in API project
-2. Runs `nswag run` to generate TypeScript client
-3. Builds and formats generated code
-4. Interactive prompts for npm version bump and publishing
-
-Configurable via environment variables: `API_DIR`, `CLIENTS_DIR`, `TS_CLIENT_DIR`.
-
-```bash
-./update-api-client.sh
-./update-api-client.sh --help
-```
-
 ### Public Data Export (`src/public-dump-web/`)
 
 | Script | Description |
@@ -139,13 +123,7 @@ Configurable via environment variables: `API_DIR`, `CLIENTS_DIR`, `TS_CLIENT_DIR
 
 ### Terms of Use
 
-Public replicas are provided for:
-
-1. Testing or contributing to official o!TR repositories
-2. Validating tournament usage by inspecting datasets
-
-Permission for third-party applications is not implicitly granted. Contact Stage
-for authorization. See `src/public-dump-web/terms-of-use.txt` for full terms.
+See `src/public-dump-web/terms-of-use.txt`.
 
 ## Command Reference
 

@@ -1,10 +1,32 @@
-These replicas are provided explicitly for those who are doing the following:
+osu! Tournament Rating (o!TR) Dataset Terms of Use
 
-1. Testing or modifying one or more official osu! Tournament Rating (o!TR) (https://github.com/osu-tournament-rating/) programs with the intention of testing and contributing to the official repositories.
-2. Validating a tournament's usage of the o!TR system by inspecting a dataset from a specific time period as needed.
+By accessing or using this dataset, you agree to the following terms.
 
-Certain data is omitted to protect user privacy.
 
-Permission to use this dataset in third-party applications, outside of the above exceptions, is not implicitly granted. Please contact Stage (https://osu.ppy.sh/users/8191845) with your use case before integrating our dataset into any of your applications. If such permission is granted, the osu! Tournament Rating project must be properly credited anywhere our dataset is used.
+Permitted Uses
 
-Thank you!
+This dataset may be used for:
+
+- Testing, developing, or contributing to the o!TR repositories located at this URL: https://github.com/osu-tournament-rating
+- Validating tournament data or inspecting historical records for verification purposes
+- Any other personal research or analysis (non-commercial) that is not expressly prohibited below.
+
+
+Requirements
+
+1. Attribution
+Any permitted use of this dataset must include clear and visible credit to the osu! Tournament Rating project, with a link to this URL: https://otr.stagec.xyz/
+
+2. No Impersonation
+You may not use this dataset in any way that implies affiliation with, endorsement by, or official representation of o!TR without explicit written permission.
+
+3. No Competing Services
+You may not use this dataset to create, operate, or distribute applications or services that replicate, compete with, or substitute our services without explicit written permission.
+
+4. Redistribution
+You may re-host, republish, or redistribute this dataset exactly as-is, provided a copy of these terms are included with the copies and all checksums are included and unmodified.
+
+
+Permission for Other Uses
+
+Uses not explicitly permitted above require prior written approval. Contact Stage (https://osu.ppy.sh/users/8191845) with your intended use case.
