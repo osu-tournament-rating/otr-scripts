@@ -56,6 +56,19 @@ setup() {
         fi
     done
 
+    if [ -d "$MAIN_WORKTREE/.claude" ]; then
+        echo "Copying .claude/ settings..."
+        for i in $(seq 1 "$count"); do
+            local wt_dir="$OTR_DIR/otr-web-$i"
+            if [ -d "$wt_dir/.claude" ]; then
+                echo "  Skipping otr-web-$i/.claude (already exists)"
+            else
+                cp -r "$MAIN_WORKTREE/.claude" "$wt_dir/.claude"
+                echo "  Copied .claude/ to otr-web-$i"
+            fi
+        done
+    fi
+
     echo "Installing dependencies in parallel..."
     local pids=()
     for i in $(seq 1 "$count"); do
