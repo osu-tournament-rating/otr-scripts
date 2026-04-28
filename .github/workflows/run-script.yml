@@ -61,13 +61,14 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
+            ENV_LOWER=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
             cd "$HOME/otr-scripts"
             git pull
             cd src
             echo "Executing: ${{ github.event.inputs.script }}"
             echo "Environment: ${{ github.event.inputs.environment }}"
             echo "Triggered by: ${{ github.actor }}"
-            bash "${{ github.event.inputs.script }}"
+            ENV="$ENV_LOWER" bash "${{ github.event.inputs.script }}"
 
   report-blocked:
     needs: validate
