@@ -18,10 +18,10 @@ on:
         description: "Target environment"
         required: true
         type: choice
-        default: "Staging"
+        default: "staging"
         options:
-          - Staging
-          - Production
+          - staging
+          - production
 
 jobs:
   validate:
@@ -38,9 +38,9 @@ jobs:
 
           PROD_ONLY="db/archive-full.sh db/archive-dev.sh db/archive-public.sh"
 
-          if [[ "$PROD_ONLY" == *"$SCRIPT"* ]] && [[ "$ENV" != "Production" ]]; then
+          if [[ "$PROD_ONLY" == *"$SCRIPT"* ]] && [[ "$ENV" != "production" ]]; then
             echo "can_proceed=false" >> $GITHUB_OUTPUT
-            echo "error_message=${SCRIPT} can only run in Production" >> $GITHUB_OUTPUT
+            echo "error_message=${SCRIPT} can only run in production" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -61,14 +61,13 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            ENV_LOWER=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
             cd "$HOME/otr-scripts"
             git pull
             cd src
             echo "Executing: ${{ github.event.inputs.script }}"
             echo "Environment: ${{ github.event.inputs.environment }}"
             echo "Triggered by: ${{ github.actor }}"
-            ENV="$ENV_LOWER" bash "${{ github.event.inputs.script }}"
+            ENV="${{ github.event.inputs.environment }}" bash "${{ github.event.inputs.script }}"
 
   report-blocked:
     needs: validate
