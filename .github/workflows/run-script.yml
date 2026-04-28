@@ -61,7 +61,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            cd /home/stage/otr-scripts
+            cd "$HOME/otr-scripts"
             git pull
             cd src
             echo "Executing: ${{ github.event.inputs.script }}"

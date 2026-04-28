@@ -22,5 +22,5 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -euo pipefail
-            cd /home/stage/otr-scripts
+            cd "$HOME/otr-scripts"
             git pull
