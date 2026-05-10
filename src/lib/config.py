@@ -1,0 +1,53 @@
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from dotenv import load_dotenv
+
+
+@dataclass(frozen=True)
+class Config:
+    env: str
+    tag: str
+    dump_dir: str
+    db_port: int
+    db_container: str
+    db_user: str
+    db_name: str
+    db_password: str
+    gcs_prod_bucket: str
+    gcs_public_bucket: str
+    gcs_dev_bucket: str
+    gcs_sa_json_path: Path
+    rabbitmq_url: str
+
+
+def _env_or_throw(key: str) -> str:
+    var = os.getenv(key)
+    if not var:
+        raise EnvironmentError(f"Expected environment var '{key}' to be set")
+
+    return var
+
+
+def init() -> Config:
+    if not load_dotenv():
+        raise FileNotFoundError("Missing .env")
+
+    return Config(
+        _env_or_throw("ENV"),
+        _env_or_throw("TAG"),
+        _env_or_throw("DUMP_DIR"),
+        int(_env_or_throw("DB_PORT")),
+        _env_or_throw("DB_CONTAINER"),
+        _env_or_throw("DB_USER"),
+        _env_or_throw("DB_NAME"),
+        _env_or_throw("DB_PASSWORD"),
+        _env_or_throw("GCS_PROD_BUCKET"),
+        _env_or_throw("GCS_PUBLIC_BUCKET"),
+        _env_or_throw("GCS_DEV_BUCKET"),
+        Path(_env_or_throw("GCS_SA_JSON_PATH")),
+        _env_or_throw("RABBITMQ_URL"),
+    )
+
+
+config = init()

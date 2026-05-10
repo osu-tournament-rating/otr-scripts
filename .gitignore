@@ -1,4 +1,8 @@
 # Environment secrets
-src/env/secrets.env
-CLAUDE.md
 .vscode/
+**/__pycache__
+gcp_secrets/
+build/
+logs/
+.env
+**/*.egg-info
