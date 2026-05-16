@@ -47,7 +47,7 @@ def init() -> Config:
         _env_or_throw("GCS_DEV_BUCKET"),
         _env_or_throw("GCS_PUBLIC_BUCKET"),
         _env_or_throw("GCS_PROD_BUCKET"),
-        Path(_env_or_throw("GCS_SA_JSON_PATH")),
+        Path(_env_or_throw("GCS_SA_JSON_PATH")).expanduser(),
         _env_or_throw("RABBITMQ_URL"),
     )
 
