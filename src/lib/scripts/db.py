@@ -99,16 +99,16 @@ def _export(replica: str) -> tuple[bool, Path]:
     cmd = cmd.strip()
     cmd += f" -d {config.db_name} | gzip > {dest}"
 
-    logger.info(f"Running subprocess [{cmd}]")
+    logger.info(f"Running subprocess {cmd}")
 
-    result = run([cmd])
+    result = subprocess.run(cmd, shell=True)
 
-    if result:
+    if result.returncode == 0:
         logger.info("Database archive creation succeeded")
+        return True, dest
     else:
         logger.error("Database archive creation failed")
-
-    return result, dest
+        return False, dest
 
 
 def archive(args: ScriptArgs):
@@ -129,7 +129,7 @@ def archive(args: ScriptArgs):
             # Upload sha256
             hash_loc = hash(dump)
             gcs_utils.upload(hash_loc, bucket)
-        
+
         if args.archive_bucket == buckets.PUBLIC:
             # Refresh the html
             generate_index()

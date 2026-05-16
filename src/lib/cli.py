@@ -17,8 +17,9 @@ class ScriptArgs:
 
 _script_options = [
     scripts.ARCHIVE,
-    scripts.RECOVERY,
     scripts.PROCESSOR,
+    scripts.RECOVERY,
+    scripts.REFRESH_INDEX,
 ]
 _buckets = [
     buckets.TEST,

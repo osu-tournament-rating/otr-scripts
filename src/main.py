@@ -2,7 +2,7 @@ from functools import partial
 import logging
 from typing import Callable
 
-from lib import cli, logs, processor
+from lib import cli, logs, processor, public_html
 from lib.scripts import db
 from lib.constants import scripts
 
@@ -17,8 +17,9 @@ def main():
 
     script_map: dict[str, Callable] = {
         scripts.ARCHIVE: partial(db.archive, args),
-        scripts.RECOVERY: partial(db.recovery, args),
         scripts.PROCESSOR: processor.run,
+        scripts.RECOVERY: partial(db.recovery, args),
+        scripts.REFRESH_INDEX: public_html.generate_index,
     }
 
     for script in args.scripts:

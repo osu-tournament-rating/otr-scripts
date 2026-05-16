@@ -35,7 +35,7 @@ def list_all(bucket: str):
     bucket_name = get_bucket_name(bucket)
     blobs = storage_client.list_blobs(bucket_name)
 
-    return list(sorted(blobs, key=lambda b: b.time_created, reverse=True))
+    return list(sorted(blobs, key=lambda b: b.name, reverse=True))
 
 
 def upload(f: Path, bucket: str):
