@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 class Config:
     tag: str
     dump_dir: Path
+    public_html_dir: Path
     db_port: int
     db_container: str
     db_user: str
@@ -36,6 +37,7 @@ def init() -> Config:
     return Config(
         _env_or_throw("TAG"),
         Path(_env_or_throw("DUMP_DIR")).expanduser(),
+        Path(_env_or_throw("PUBLIC_HTML_DIR")).expanduser(),
         int(_env_or_throw("DB_PORT")),
         _env_or_throw("DB_CONTAINER"),
         _env_or_throw("DB_USER"),

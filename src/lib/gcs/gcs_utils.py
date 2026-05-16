@@ -23,6 +23,21 @@ def get_bucket_name(bucket: str):
     return bucket_name
 
 
+def list_archives(bucket: str):
+    bucket_name = get_bucket_name(bucket)
+    blobs = storage_client.list_blobs(bucket_name)
+
+    filtered = list(filter(lambda f: f.name.endswith(".gz"), blobs))
+    return list(sorted(filtered, key=lambda b: b.time_created, reverse=True))
+
+
+def list_all(bucket: str):
+    bucket_name = get_bucket_name(bucket)
+    blobs = storage_client.list_blobs(bucket_name)
+
+    return list(sorted(blobs, key=lambda b: b.time_created, reverse=True))
+
+
 def upload(f: Path, bucket: str):
     """Upload a file to a bucket
 
@@ -50,9 +65,7 @@ def download_latest(bucket: str, out_dir: Path) -> Path | None:
 
     logger.info(f"Downloading latest archive from {bucket_name}")
 
-    blobs = storage_client.list_blobs(bucket_name)
-
-    filtered = list(filter(lambda f: f.name.endswith(".gz"), blobs))
+    filtered = list_archives(bucket)
     latest = max(filtered, key=lambda b: b.time_created, default=None)
 
     if not latest:

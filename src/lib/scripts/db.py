@@ -7,6 +7,7 @@ from lib.cli import ScriptArgs
 from lib.config import config
 from lib.constants import buckets
 from lib.gcs import gcs_utils
+from lib.public_html import generate_index
 from lib.security import hash
 import subprocess
 
@@ -125,10 +126,13 @@ def archive(args: ScriptArgs):
         gcs_utils.upload(dump, bucket)
 
         if args.upload_hash:
-            # Rebuild public html
             # Upload sha256
             hash_loc = hash(dump)
             gcs_utils.upload(hash_loc, bucket)
+        
+        if args.archive_bucket == buckets.PUBLIC:
+            # Refresh the html
+            generate_index()
 
     except Exception:
         logger.exception(f"Error occurred during upload of {dump} to GCS bucket")
