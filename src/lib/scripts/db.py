@@ -3,12 +3,12 @@ import itertools
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from lib.cli import ScriptArgs
 from lib.config import config
 from lib.exec import run
-from google.cloud.storage import Bucket
-from google.cloud.storage import transfer_manager
-from lib.gcp.client import storage_client
+from lib.constants import buckets
+from lib.gcs import gcs_utils
+from lib.security import hash
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ dev_blacklist = [
 
 
 def _import(dump: Path) -> bool:
+    """Import a local dump to the database"""
     if dump.suffix != ".gz":
         logger.error(f"Expected dump path to end with '.gz': {dump}")
         return False
@@ -60,85 +61,59 @@ def _import(dump: Path) -> bool:
     return run(cmd)
 
 
-def _export(replica: Literal["dev", "public", "production"]) -> tuple[bool, Path]:
+def _export(replica: str) -> tuple[bool, Path]:
     dump_file_format = datetime.now().strftime(
-        f"otr-{replica}-replica_%Y-%m_%d_%H_%M_%S.gz"
+        f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
     )
-    dest = Path(config.dump_dir, dump_file_format)
+    dump_dir = Path(config.dump_dir).expanduser()
+    dump_dir.mkdir(parents=True, exist_ok=True)
+
+    dest = dump_dir / dump_file_format
 
     dev_excludes = [["--exclude-table-data", x] for x in dev_blacklist]
     public_includes = [["--table", x] for x in public_whitelist]
 
-    cmd = (
-        f"docker exec {config.db_container} pg_dump -c --if-exists -U {config.db_user} "
-    )
+    cmd = f"docker exec -i {config.db_container} pg_dump -c --if-exists -U {config.db_user} "
 
-    # cmd = [
-    #     "docker",
-    #     "exec",
-    #     config.db_container,
-    #     "'pg_dump",
-    #     "-c",
-    #     "--if-exists",
-    #     "-U",
-    #     config.db_user,
-    # ]
-
-    if replica == "dev":
+    if replica == buckets.DEV:
         cmd += " ".join(itertools.chain.from_iterable(dev_excludes))
-    elif replica == "public":
+    elif replica == buckets.PUBLIC:
         cmd += " ".join(itertools.chain.from_iterable(public_includes))
 
-    cmd += f" {config.db_name} | gzip > {dest}"
+    cmd = cmd.strip()
+    cmd += f" -d {config.db_name} | gzip > {dest}"
 
     logger.info(f"Running subprocess [{cmd}]")
 
     result = run([cmd])
 
+    if result:
+        logger.info("Database archive creation succeeded")
+    else:
+        logger.error("Database archive creation failed")
+
     return result, dest
 
 
-def _upload(dump: Path, replica: Literal["dev", "public", "production"]):
-    """Upload a dump to GCP"""
+def archive(args: ScriptArgs):
+    bucket = args.archive_bucket
+    if not bucket:
+        raise Exception("bucket must be populated")
 
-    match replica:
-        case "dev":
-            bucket_name = config.gcs_dev_bucket
-        case "public":
-            bucket_name = config.gcs_public_bucket
-        case "production":
-            bucket_name = config.gcs_prod_bucket
-
-    logger.info(f"Uploading {dump}")
-
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(dump.name)
-    blob.upload_from_filename(str(dump))
-
-    logger.info(f"Uploaded {blob} to {bucket}")
-
-
-def _export_and_upload(replica: Literal["dev", "public", "production"]):
-    success, dump = _export(replica)
+    success, dump = _export(bucket)
 
     if not success:
-        logger.error("Replica export failed, aborting upload")
+        logger.error(f"Failed to export bucket to local path {dump}")
         return
 
     try:
-        _upload(dump, replica)
+        gcs_utils.upload(dump, bucket)
+
+        if args.upload_hash:
+            # Rebuild public html
+            # Upload sha256
+            hash_loc = hash(dump)
+            gcs_utils.upload(hash_loc, bucket)
+
     except Exception:
         logger.exception(f"Error occurred during upload of {dump} to GCS bucket")
-
-
-def dev_archive():
-    _export_and_upload("dev")
-
-
-def public_archive():
-    _export_and_upload("public")
-    # TODO: Rebuild HTML
-
-
-def prod_archive():
-    _export_and_upload("production")

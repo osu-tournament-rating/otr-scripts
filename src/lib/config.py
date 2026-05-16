@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 @dataclass(frozen=True)
 class Config:
-    env: str
     tag: str
     dump_dir: str
     db_port: int
@@ -14,9 +13,10 @@ class Config:
     db_user: str
     db_name: str
     db_password: str
-    gcs_prod_bucket: str
-    gcs_public_bucket: str
+    gcs_test_bucket: str
     gcs_dev_bucket: str
+    gcs_public_bucket: str
+    gcs_prod_bucket: str
     gcs_sa_json_path: Path
     rabbitmq_url: str
 
@@ -34,7 +34,6 @@ def init() -> Config:
         raise FileNotFoundError("Missing .env")
 
     return Config(
-        _env_or_throw("ENV"),
         _env_or_throw("TAG"),
         _env_or_throw("DUMP_DIR"),
         int(_env_or_throw("DB_PORT")),
@@ -42,9 +41,10 @@ def init() -> Config:
         _env_or_throw("DB_USER"),
         _env_or_throw("DB_NAME"),
         _env_or_throw("DB_PASSWORD"),
-        _env_or_throw("GCS_PROD_BUCKET"),
-        _env_or_throw("GCS_PUBLIC_BUCKET"),
+        _env_or_throw("GCS_TEST_BUCKET"),
         _env_or_throw("GCS_DEV_BUCKET"),
+        _env_or_throw("GCS_PUBLIC_BUCKET"),
+        _env_or_throw("GCS_PROD_BUCKET"),
         Path(_env_or_throw("GCS_SA_JSON_PATH")),
         _env_or_throw("RABBITMQ_URL"),
     )
