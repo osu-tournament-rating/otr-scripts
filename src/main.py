@@ -17,6 +17,8 @@ def main():
 
     script_map: dict[str, Callable] = {
         scripts.ARCHIVE: partial(db.archive, args),
+        scripts.RECOVERY: partial(db.recovery, args),
+        # scripts.PROCESSOR: partial(processor.run, args)
     }
 
     for script in args.scripts:

@@ -66,7 +66,9 @@ def add_args(parser: ArgumentParser):
 
     parser.add_argument("--log-dir", type=str, required=False, default="./logs")
 
-    archive_args = parser.add_argument_group("archive")
+    archive_args = parser.add_argument_group(
+        "archive", f"Args specific to the {scripts.ARCHIVE} script"
+    )
     archive_args.add_argument(
         "--archive-bucket",
         help="GCS bucket used for publishing archives",
@@ -78,14 +80,16 @@ def add_args(parser: ArgumentParser):
         help="Whether to upload a SHA256 hash with the archive",
     )
 
-    recovery_args = parser.add_argument_group("recovery")
-    recovery_meg = recovery_args.add_mutually_exclusive_group()
-    recovery_meg.add_argument(
+    recovery_args = parser.add_argument_group(
+        "recovery", f"Args specific to the {scripts.RECOVERY} script"
+    )
+    recovery_src_args = recovery_args.add_mutually_exclusive_group()
+    recovery_src_args.add_argument(
         "--recovery-bucket",
         help="GCS bucket used for disaster recovery",
         choices=_buckets,
     )
-    recovery_meg.add_argument(
+    recovery_src_args.add_argument(
         "--recovery-src",
         type=str,
         help="Path to a local database archive to use in recovery instead of a GCS bucket",

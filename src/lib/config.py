@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 @dataclass(frozen=True)
 class Config:
     tag: str
-    dump_dir: str
+    dump_dir: Path
     db_port: int
     db_container: str
     db_user: str
@@ -35,7 +35,7 @@ def init() -> Config:
 
     return Config(
         _env_or_throw("TAG"),
-        _env_or_throw("DUMP_DIR"),
+        Path(_env_or_throw("DUMP_DIR")).expanduser(),
         int(_env_or_throw("DB_PORT")),
         _env_or_throw("DB_CONTAINER"),
         _env_or_throw("DB_USER"),

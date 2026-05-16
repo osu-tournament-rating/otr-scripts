@@ -7,6 +7,7 @@ from lib.gcs.client import storage_client
 
 logger = logging.getLogger(__name__)
 
+
 def get_bucket_name(bucket: str):
     match bucket:
         case buckets.TEST:
@@ -41,3 +42,32 @@ def upload(f: Path, bucket: str):
     blob.upload_from_filename(str(f))
 
     logger.info(f"Uploaded {blob} to {gcs_bucket}")
+
+
+def download_latest(bucket: str, out_dir: Path) -> Path | None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    bucket_name = get_bucket_name(bucket)
+
+    logger.info(f"Downloading latest archive from {bucket_name}")
+
+    blobs = storage_client.list_blobs(bucket_name)
+
+    filtered = list(filter(lambda f: f.name.endswith(".gz"), blobs))
+    latest = max(filtered, key=lambda b: b.time_created, default=None)
+
+    if not latest:
+        logger.error("Could not identify latest blob")
+        return None
+
+    # Download
+    output_loc = out_dir / latest.name
+    try:
+        with open(output_loc, "wb") as f:
+            storage_client.download_blob_to_file(latest, f)
+
+        logger.info(f"Downloaded blob {latest} to {out_dir}")
+    except Exception:
+        logger.exception("Failed to download latest archive")
+        return None
+
+    return output_loc

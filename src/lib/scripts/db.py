@@ -5,10 +5,10 @@ from datetime import datetime
 from pathlib import Path
 from lib.cli import ScriptArgs
 from lib.config import config
-from lib.exec import run
 from lib.constants import buckets
 from lib.gcs import gcs_utils
 from lib.security import hash
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -54,21 +54,33 @@ def _import(dump: Path) -> bool:
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
             && psql -U {config.db_user} -d {config.db_name}"
 
-    cmd: list[str] = (
-        f'gunzip -c {dump} | docker exec -i {config.db_container} bash -c "{bash}"'.split()
+    # cmd: list[str] = (
+    #     f'gunzip -c {dump} | docker exec -i {config.db_container} bash -c "{bash}"'.split()
+    # )
+
+    proc1 = subprocess.run(f"gunzip -c {dump}", capture_output=True, shell=True)
+
+    if proc1.stderr:
+        logger.error(f"gunzip produced errors: {proc1.stderr}")
+        return False
+
+    proc2 = subprocess.run(
+        args=f'docker exec -i {config.db_container} bash -c "{bash}"',
+        shell=True,
+        input=proc1.stdout,
     )
 
-    return run(cmd)
+    if proc2.stderr:
+        logger.error(f"docker exec produced errors: {proc2.stderr}")
 
 
 def _export(replica: str) -> tuple[bool, Path]:
     dump_file_format = datetime.now().strftime(
         f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
     )
-    dump_dir = Path(config.dump_dir).expanduser()
-    dump_dir.mkdir(parents=True, exist_ok=True)
+    config.dump_dir.mkdir(parents=True, exist_ok=True)
 
-    dest = dump_dir / dump_file_format
+    dest = config.dump_dir / dump_file_format
 
     dev_excludes = [["--exclude-table-data", x] for x in dev_blacklist]
     public_includes = [["--table", x] for x in public_whitelist]
@@ -98,7 +110,7 @@ def _export(replica: str) -> tuple[bool, Path]:
 def archive(args: ScriptArgs):
     bucket = args.archive_bucket
     if not bucket:
-        raise Exception("bucket must be populated")
+        raise Exception("Archive bucket must be populated")
 
     success, dump = _export(bucket)
 
@@ -117,3 +129,20 @@ def archive(args: ScriptArgs):
 
     except Exception:
         logger.exception(f"Error occurred during upload of {dump} to GCS bucket")
+
+
+def recovery(args: ScriptArgs):
+    bucket = args.recovery_bucket
+    if not bucket:
+        raise Exception("Recovery bucket must be populated")
+
+    if args.recovery_src:
+        # Just import this dump
+        _import(args.recovery_src)
+    else:
+        # Download and import
+        out_file = gcs_utils.download_latest(bucket, config.dump_dir)
+        if not out_file:
+            return
+
+        _import(out_file)
