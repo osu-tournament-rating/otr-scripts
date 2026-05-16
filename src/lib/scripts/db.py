@@ -72,6 +72,9 @@ def _import(dump: Path) -> bool:
 
     if proc2.stderr:
         logger.error(f"docker exec produced errors: {proc2.stderr}")
+        return False
+
+    return True
 
 
 def _export(replica: str) -> tuple[bool, Path]:
