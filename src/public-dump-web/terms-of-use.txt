@@ -5,7 +5,7 @@ By accessing or using this dataset, you agree to the following terms.
 Requirements
 
 1. Attribution
-Any permitted use of this dataset must include clear and visible credit to the osu! Tournament Rating project, with a link to this URL: https://otr.stagec.xyz/
+Any permitted use of this dataset must include clear and visible credit to the osu! Tournament Rating project, with a link to this URL: https://otr.stagec.net/
 
 2. No Impersonation
 You may not use this dataset in any way that implies affiliation with, endorsement by, or official representation of o!TR without explicit written permission.
