@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from pathlib import Path
 
-time_snapshot = datetime.now()
+time_snapshot = datetime.now(timezone.utc)
 file_timestamp = time_snapshot.strftime(format="%Y%m%d_%H%M%S")
 
 

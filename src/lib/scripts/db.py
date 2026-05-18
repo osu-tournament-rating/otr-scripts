@@ -1,7 +1,7 @@
 # Archive the current state of the db and upload to gcp
 import itertools
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from lib.cli import ScriptArgs
 from lib.config import config
@@ -88,13 +88,14 @@ def _import(dump: Path) -> bool:
 
     return True
 
+
 def remove_dumps():
     cmd = f"rm {config.dump_dir}/*"
     subprocess.run(cmd, shell=True)
 
 
 def _export(replica: str) -> tuple[bool, Path]:
-    dump_file_format = datetime.now().strftime(
+    dump_file_format = datetime.now(timezone.utc).strftime(
         f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
     )
     config.dump_dir.mkdir(parents=True, exist_ok=True)
@@ -145,7 +146,7 @@ def archive(args: ScriptArgs):
             # Upload sha256
             hash_loc = hash(dump)
             gcs_utils.upload(hash_loc, bucket)
-            
+
             # Remove after upload
             hash_loc.unlink()
 
