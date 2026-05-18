@@ -52,14 +52,20 @@ def _import(dump: Path) -> bool:
         return False
 
     # Restore cannot happen if there are any active connections
-    stop_start = f"docker stop {config.db_container} || true && docker start {config.db_container} || true"
-    subprocess.run(stop_start, shell=True)
+
+    profile = " --profile node-exporter" if config.environment == "production" else ""
+
+    stop_all = f"docker compose{profile} down"
+    subprocess.run(stop_all, shell=True, cwd=config.otr_web_dir)
+
+    start_db = f"docker compose{profile} up -d db"
+    subprocess.run(start_db, shell=True, cwd=config.otr_web_dir)
 
     bash = f"psql -U {config.db_user} -d template1 -c 'DROP DATABASE IF EXISTS {config.db_name};' \
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
             && psql -U {config.db_user} -d {config.db_name}"
 
-    proc1 = subprocess.run(f"gunzip -c {dump}", capture_output=True, shell=True)
+    proc1 = subprocess.run(f"gunzip -c {dump}", shell=True, capture_output=True)
 
     if proc1.stderr:
         logger.error(f"gunzip produced errors: {proc1.stderr}")
@@ -70,6 +76,9 @@ def _import(dump: Path) -> bool:
         shell=True,
         input=proc1.stdout,
     )
+
+    start_all = f"docker compose{profile} up -d"
+    subprocess.run(start_all, shell=True, cwd=config.otr_web_dir)
 
     if proc2.stderr:
         logger.error(f"docker exec produced errors: {proc2.stderr}")

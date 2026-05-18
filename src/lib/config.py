@@ -6,9 +6,12 @@ from dotenv import load_dotenv
 
 @dataclass(frozen=True)
 class Config:
+    # 'staging' or 'production'
+    environment: str
     tag: str
     dump_dir: Path
     public_html_dir: Path
+    otr_web_dir: Path
     db_port: int
     db_container: str
     db_user: str
@@ -35,9 +38,11 @@ def init() -> Config:
         raise FileNotFoundError("Missing .env")
 
     return Config(
+        _env_or_throw("ENVIRONMENT"),
         _env_or_throw("TAG"),
         Path(_env_or_throw("DUMP_DIR")).expanduser(),
         Path(_env_or_throw("PUBLIC_HTML_DIR")).expanduser(),
+        Path(_env_or_throw("OTR_WEB_DIR")).expanduser(),
         int(_env_or_throw("DB_PORT")),
         _env_or_throw("DB_CONTAINER"),
         _env_or_throw("DB_USER"),
