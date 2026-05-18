@@ -84,6 +84,9 @@ def _import(dump: Path) -> bool:
         logger.error(f"docker exec produced errors: {proc2.stderr}")
         return False
 
+    remove_dumps = f"rm {config.dump_dir}/*"
+    subprocess.run(remove_dumps, shell=True)
+
     return True
 
 
