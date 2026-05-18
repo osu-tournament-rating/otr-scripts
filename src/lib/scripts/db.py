@@ -84,10 +84,13 @@ def _import(dump: Path) -> bool:
         logger.error(f"docker exec produced errors: {proc2.stderr}")
         return False
 
-    remove_dumps = f"rm {config.dump_dir}/*"
-    subprocess.run(remove_dumps, shell=True)
+    remove_dumps()
 
     return True
+
+def remove_dumps():
+    cmd = f"rm {config.dump_dir}/*"
+    subprocess.run(cmd, shell=True)
 
 
 def _export(replica: str) -> tuple[bool, Path]:
@@ -114,6 +117,7 @@ def _export(replica: str) -> tuple[bool, Path]:
     logger.info(f"Running subprocess {cmd}")
 
     result = subprocess.run(cmd, shell=True)
+    remove_dumps()
 
     if result.returncode == 0:
         logger.info("Database archive creation succeeded")
@@ -141,6 +145,9 @@ def archive(args: ScriptArgs):
             # Upload sha256
             hash_loc = hash(dump)
             gcs_utils.upload(hash_loc, bucket)
+            
+            # Remove after upload
+            hash_loc.unlink()
 
         if args.archive_bucket == buckets.PUBLIC:
             # Refresh the html
