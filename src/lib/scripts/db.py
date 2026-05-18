@@ -60,10 +60,6 @@ def _import(dump: Path) -> bool:
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
             && psql -U {config.db_user} -d {config.db_name}"
 
-    # cmd: list[str] = (
-    #     f'gunzip -c {dump} | docker exec -i {config.db_container} bash -c "{bash}"'.split()
-    # )
-
     proc1 = subprocess.run(f"gunzip -c {dump}", capture_output=True, shell=True)
 
     if proc1.stderr:
