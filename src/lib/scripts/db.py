@@ -53,8 +53,7 @@ def _import(dump: Path) -> bool:
 
     # Restore cannot happen if there are any active connections
     stop_start = f"docker stop {config.db_container} || true && docker start {config.db_container} || true"
-
-    subprocess.run(stop_start)
+    subprocess.run(stop_start, shell=True)
 
     bash = f"psql -U {config.db_user} -d template1 -c 'DROP DATABASE IF EXISTS {config.db_name};' \
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
