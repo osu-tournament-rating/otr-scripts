@@ -51,6 +51,11 @@ def _import(dump: Path) -> bool:
         logger.error(f"Expected dump path to end with '.gz': {dump}")
         return False
 
+    # Restore cannot happen if there are any active connections
+    stop_start = f"docker stop {config.db_container} || true && docker start {config.db_container} || true"
+
+    subprocess.run(stop_start)
+
     bash = f"psql -U {config.db_user} -d template1 -c 'DROP DATABASE IF EXISTS {config.db_name};' \
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
             && psql -U {config.db_user} -d {config.db_name}"
