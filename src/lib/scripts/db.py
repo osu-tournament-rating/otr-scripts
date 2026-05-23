@@ -118,7 +118,6 @@ def _export(replica: str) -> tuple[bool, Path]:
     logger.info(f"Running subprocess {cmd}")
 
     result = subprocess.run(cmd, shell=True)
-    remove_dumps()
 
     if result.returncode == 0:
         logger.info("Database archive creation succeeded")
@@ -153,6 +152,8 @@ def archive(args: ScriptArgs):
         if args.archive_bucket == buckets.PUBLIC:
             # Refresh the html
             generate_index()
+
+        remove_dumps()
 
     except Exception:
         logger.exception(f"Error occurred during upload of {dump} to GCS bucket")
