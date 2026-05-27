@@ -49,8 +49,8 @@ jobs:
             set -euo pipefail
             REMOTE_PATH="$1"
             cd "$REMOTE_PATH"
-            uv venv --python 3.14
-            uv pip install .
+            ~/.local/bin/uv venv --python 3.14
+            ~/.local/bin/uv pip install .
           EOF
 
       - name: Upload deployment assets
