@@ -22,7 +22,7 @@ jobs:
           tags: tag:ci
           ping: ${{ secrets.SSH_HOST }}
 
-      - name: Re-clone repository & setup environment
+      - name: Re-clone repository
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -36,6 +36,18 @@ jobs:
             REPO_URL="$2"
             rm -rf "$REMOTE_PATH"
             git clone "$REPO_URL" "$REMOTE_PATH"
+          EOF
+
+      - name: Setup Python environment
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" bash -s -- "$REMOTE_PATH" <<'EOF'
+            set -euo pipefail
+            REMOTE_PATH="$1"
             cd "$REMOTE_PATH"
             uv venv --python 3.14
             uv pip install .
