@@ -11,9 +11,14 @@ def hash(p: Path) -> Path:
     Returns a path to the hash
     """
     logger.info(f"Hashing {p}")
-    run(f"sha256 {p.name} > {p.name}.sha256", cwd=p.parent, shell=True)
-
     output_loc = p.parent / f"{p.name}.sha256"
+    run(
+        f"sha256sum {p.name} > {output_loc.name}",
+        cwd=p.parent,
+        shell=True,
+        check=True,
+    )
+
     logger.info(f"Hash saved to {output_loc}")
 
     return output_loc
