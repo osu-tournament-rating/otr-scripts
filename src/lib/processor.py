@@ -21,7 +21,7 @@ def run():
     rust_log = "RUST_LOG=info"
     rabbit = f"RABBITMQ_URL={config.rabbitmq_url}"
 
-    run_cmd = f"docker run --network host -e CONNECTION_STRING={conn_str} -e {rust_log} -e {rabbit} {image}".split()
+    run_cmd = f"docker run --network host -e CONNECTION_STRING={conn_str} -e RUST_LOG={rust_log} -e RABBITMQ_URL={rabbit} {image}".split()
 
     logger.info("Running processor")
     exc = subprocess.run(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
