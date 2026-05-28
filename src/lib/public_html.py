@@ -11,7 +11,8 @@ def generate_index():
     # This will always be done for a public bucket
     bucket = buckets.PUBLIC
 
-    terms = Path("src", "public-dump-web", "terms-of-use.txt").read_text()
+    terms_path = Path(__file__).resolve().parent.parent / "public-dump-web" / "terms-of-use.txt"
+    terms = terms_path.read_text()
 
     blobs = gcs_utils.list_all(bucket)
     archives, misc = [], []
