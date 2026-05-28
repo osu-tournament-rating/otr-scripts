@@ -24,11 +24,11 @@ def generate_index():
             misc.append(b)
 
     # Display misc above archives.
-    sorted_archives = sorted(archives, key=lambda b: b.name, reverse=True)
+    sorted_archives = sorted(archives, key=lambda b: b.time_created, reverse=True)
     sorted_misc = sorted(misc, key=lambda b: b.name)
     combined = sorted_misc + sorted_archives
 
-    link_template = f"https://storage.googleapis.com/{bucket}/{{}}"
+    link_template = f"https://storage.googleapis.com/{config.gcs_public_bucket}/{{}}"
     list_item_template = "<li><a href={}>{}</a></li>"
 
     blob_html = "\n".join(
