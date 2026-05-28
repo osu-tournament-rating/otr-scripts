@@ -17,7 +17,7 @@ def run():
     for line in pull.stdout.splitlines():
         logger.info(line.decode())
 
-    conn_str = f"postgresql://{config.db_user}:{config.db_password}@{config.db_container}:{config.db_port}/{config.db_name}"
+    conn_str = f"postgresql://{config.db_user}:{config.db_password}@localhost:{config.db_port}/{config.db_name}"
     rust_log = "info"
     rabbit = config.rabbitmq_url
 
