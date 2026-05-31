@@ -117,7 +117,8 @@ def validate_disaster_recovery(args: Namespace, parser: ArgumentParser):
     if scripts.RECOVERY not in args.script:
         return
 
-    if not args.recovery_bucket:
+    if not args.recovery_bucket and not args.recovery_src:
         parser.error(
-            "A recovery bucket must be supplied to perform a disaster recovery"
+            "Either a recovery bucket (--recovery-bucket) or a local source "
+            "(--recovery-src) must be supplied to perform a disaster recovery"
         )

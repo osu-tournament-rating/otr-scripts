@@ -160,17 +160,18 @@ def archive(args: ScriptArgs):
 
 
 def recovery(args: ScriptArgs):
+    if args.recovery_src:
+        # Just import this local dump, no GCS connection needed
+        _import(args.recovery_src)
+        return
+
     bucket = args.recovery_bucket
     if not bucket:
         raise Exception("Recovery bucket must be populated")
 
-    if args.recovery_src:
-        # Just import this dump
-        _import(args.recovery_src)
-    else:
-        # Download and import
-        out_file = gcs_utils.download_latest(bucket, config.dump_dir)
-        if not out_file:
-            return
+    # Download and import
+    out_file = gcs_utils.download_latest(bucket, config.dump_dir)
+    if not out_file:
+        return
 
-        _import(out_file)
+    _import(out_file)
