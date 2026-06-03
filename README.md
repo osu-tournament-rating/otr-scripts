@@ -1,7 +1,5 @@
 # otr-scripts
 
-*No AI was used in the development of this repository.*
-
 What we need:
 
 - Disaster recovery from gcp
