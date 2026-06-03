@@ -9,3 +9,13 @@ dependencies = [
     "black",
     "ruff"
 ]
+
+[project.optional-dependencies]
+e2e = [
+    "pytest~=8.4.2",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "e2e: end-to-end tests that use external services",
+]
