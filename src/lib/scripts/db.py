@@ -1,6 +1,7 @@
 # Archive the current state of the db and upload to gcp
 import itertools
 import logging
+import shlex
 from datetime import datetime, timezone
 from pathlib import Path
 from lib.cli import ScriptArgs
@@ -14,9 +15,13 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
-# Include exactly these tables in public archives
-public_whitelist = [
-    "drizzle.__drizzle_migrations",
+# Include all objects in these schemas in public archives
+public_schema_whitelist = [
+    "drizzle",
+]
+
+# Include exactly these public-schema tables in public archives
+public_table_whitelist = [
     "public.beatmap_attributes",
     "public.beatmaps",
     "public.beatmapsets",
@@ -94,6 +99,61 @@ def remove_dumps():
     subprocess.run(cmd, shell=True)
 
 
+def _pg_dump_options(option: str, patterns: list[str]) -> list[str]:
+    return list(
+        itertools.chain.from_iterable((option, pattern) for pattern in patterns)
+    )
+
+
+def _pg_dump_command(options: list[str]) -> str:
+    return shlex.join(
+        [
+            "docker",
+            "exec",
+            "-i",
+            config.db_container,
+            "pg_dump",
+            "-c",
+            "--if-exists",
+            "-U",
+            config.db_user,
+            *options,
+            "-d",
+            config.db_name,
+        ]
+    )
+
+
+def _gzip_dump_command(dump_commands: list[str], dest: Path) -> str:
+    if len(dump_commands) == 1:
+        dump_command = dump_commands[0]
+    else:
+        dump_command = "{ " + " && ".join(dump_commands) + "; }"
+
+    return f"{dump_command} | gzip > {shlex.quote(str(dest))}"
+
+
+def _export_command(replica: str, dest: Path) -> str:
+    if replica == buckets.DEV:
+        return _gzip_dump_command(
+            [_pg_dump_command(_pg_dump_options("--exclude-table-data", dev_blacklist))],
+            dest,
+        )
+
+    if replica == buckets.PUBLIC:
+        # pg_dump ignores --schema when --table is used, so public exports need
+        # separate streams for the whole drizzle schema and whitelisted tables.
+        return _gzip_dump_command(
+            [
+                _pg_dump_command(_pg_dump_options("--schema", public_schema_whitelist)),
+                _pg_dump_command(_pg_dump_options("--table", public_table_whitelist)),
+            ],
+            dest,
+        )
+
+    return _gzip_dump_command([_pg_dump_command([])], dest)
+
+
 def _export(replica: str) -> tuple[bool, Path]:
     dump_file_format = datetime.now(timezone.utc).strftime(
         f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
@@ -102,22 +162,11 @@ def _export(replica: str) -> tuple[bool, Path]:
 
     dest = config.dump_dir / dump_file_format
 
-    dev_excludes = [["--exclude-table-data", x] for x in dev_blacklist]
-    public_includes = [["--table", x] for x in public_whitelist]
-
-    cmd = f"docker exec -i {config.db_container} pg_dump -c --if-exists -U {config.db_user} "
-
-    if replica == buckets.DEV:
-        cmd += " ".join(itertools.chain.from_iterable(dev_excludes))
-    elif replica == buckets.PUBLIC:
-        cmd += " ".join(itertools.chain.from_iterable(public_includes))
-
-    cmd = cmd.strip()
-    cmd += f" -d {config.db_name} | gzip > {dest}"
+    cmd = _export_command(replica, dest)
 
     logger.info(f"Running subprocess {cmd}")
 
-    result = subprocess.run(cmd, shell=True)
+    result = subprocess.run(["bash", "-o", "pipefail", "-c", cmd])
 
     if result.returncode == 0:
         logger.info("Database archive creation succeeded")
