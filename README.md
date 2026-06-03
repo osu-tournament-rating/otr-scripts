@@ -1,12 +1,5 @@
 # otr-scripts
 
-What we need:
-
-- Disaster recovery from gcp
-- Public dump
-- Dev archive
-- Run processor
-
 ## Getting started
 
 Install deps:
