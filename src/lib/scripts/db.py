@@ -15,13 +15,9 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
-# Include all objects in these schemas in public archives
-public_schema_whitelist = [
-    "drizzle",
-]
-
-# Include exactly these public-schema tables in public archives
-public_table_whitelist = [
+# Include data for exactly these tables in public archives
+public_data_table_whitelist = [
+    "drizzle.__drizzle_migrations",
     "public.beatmap_attributes",
     "public.beatmaps",
     "public.beatmapsets",
@@ -105,7 +101,8 @@ def _pg_dump_options(option: str, patterns: list[str]) -> list[str]:
     )
 
 
-def _pg_dump_command(options: list[str]) -> str:
+def _pg_dump_command(options: list[str], clean: bool = True) -> str:
+    clean_options = ["-c", "--if-exists"] if clean else []
     return shlex.join(
         [
             "docker",
@@ -113,8 +110,7 @@ def _pg_dump_command(options: list[str]) -> str:
             "-i",
             config.db_container,
             "pg_dump",
-            "-c",
-            "--if-exists",
+            *clean_options,
             "-U",
             config.db_user,
             *options,
@@ -141,12 +137,20 @@ def _export_command(replica: str, dest: Path) -> str:
         )
 
     if replica == buckets.PUBLIC:
-        # pg_dump ignores --schema when --table is used, so public exports need
-        # separate streams for the whole drizzle schema and whitelisted tables.
+        # Match the original public archive script: dump the full schema so
+        # extensions, functions, triggers, and FK targets exist, then include
+        # data only for public-safe tables.
         return _gzip_dump_command(
             [
-                _pg_dump_command(_pg_dump_options("--schema", public_schema_whitelist)),
-                _pg_dump_command(_pg_dump_options("--table", public_table_whitelist)),
+                _pg_dump_command(["--schema-only"]),
+                _pg_dump_command(
+                    [
+                        "--data-only",
+                        "--disable-triggers",
+                        *_pg_dump_options("--table", public_data_table_whitelist),
+                    ],
+                    clean=False,
+                ),
             ],
             dest,
         )
