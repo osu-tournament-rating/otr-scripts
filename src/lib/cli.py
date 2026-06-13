@@ -12,6 +12,7 @@ class ScriptArgs:
     archive_bucket: str | None
     recovery_bucket: str | None
     recovery_src: Path | None
+    db_only: bool
     upload_hash: bool
 
 
@@ -51,6 +52,7 @@ def init() -> ScriptArgs:
         args.archive_bucket,
         args.recovery_bucket,
         Path(args.recovery_src) if args.recovery_src else None,
+        args.db_only,
         args.upload_hash,
     )
 
@@ -94,6 +96,12 @@ def add_args(parser: ArgumentParser):
         "--recovery-src",
         type=str,
         help="Path to a local database archive to use in recovery instead of a GCS bucket",
+    )
+    recovery_args.add_argument(
+        "--db-only",
+        action="store_true",
+        help="During recovery, only stop and start the database container instead "
+        "of restarting the entire docker-compose stack (useful for local dev)",
     )
 
     args = parser.parse_args()

@@ -46,8 +46,15 @@ dev_blacklist = [
 ]
 
 
-def _import(dump: Path) -> bool:
-    """Import a local dump to the database"""
+def _import(dump: Path, db_only: bool = False) -> bool:
+    """Import a local dump to the database
+
+    Args:
+        dump: Path to the gzipped database dump to restore.
+        db_only: When True, only stop and start the database container instead
+            of restarting the entire docker-compose stack. Useful for local dev
+            where tearing down the whole stack is undesirable.
+    """
     if dump.suffix != ".gz":
         logger.error(f"Expected dump path to end with '.gz': {dump}")
         return False
@@ -56,8 +63,12 @@ def _import(dump: Path) -> bool:
 
     profile = " --profile node-exporter" if config.environment == "production" else ""
 
-    stop_all = f"docker compose{profile} down"
-    subprocess.run(stop_all, shell=True, cwd=config.otr_web_dir)
+    stop = (
+        f"docker compose{profile} stop db"
+        if db_only
+        else f"docker compose{profile} down"
+    )
+    subprocess.run(stop, shell=True, cwd=config.otr_web_dir)
 
     start_db = f"docker compose{profile} up -d db"
     subprocess.run(start_db, shell=True, cwd=config.otr_web_dir)
@@ -78,8 +89,9 @@ def _import(dump: Path) -> bool:
         input=proc1.stdout,
     )
 
-    start_all = f"docker compose{profile} up -d"
-    subprocess.run(start_all, shell=True, cwd=config.otr_web_dir)
+    if not db_only:
+        start_all = f"docker compose{profile} up -d"
+        subprocess.run(start_all, shell=True, cwd=config.otr_web_dir)
 
     if proc2.stderr:
         logger.error(f"docker exec produced errors: {proc2.stderr}")
@@ -215,7 +227,7 @@ def archive(args: ScriptArgs):
 def recovery(args: ScriptArgs):
     if args.recovery_src:
         # Just import this local dump, no GCS connection needed
-        _import(args.recovery_src)
+        _import(args.recovery_src, db_only=args.db_only)
         return
 
     bucket = args.recovery_bucket
@@ -227,4 +239,4 @@ def recovery(args: ScriptArgs):
     if not out_file:
         return
 
-    _import(out_file)
+    _import(out_file, db_only=args.db_only)
