@@ -65,6 +65,8 @@ modules rather than duplicating them elsewhere.
   expansion is required, quote paths and preserve upstream command failures.
 - Do not run deployments, upload archives, restore databases, publish indexes, or
   start the processor merely to test a code change.
+- When a potentially destructive operation is required, STOP and wait for manual
+  intervention before proceeding.
 
 ## Validation
 
@@ -86,10 +88,7 @@ Branch: <short-kebab-case-description>
 
 Commit:
 <Imperative verb> <specific outcome>
-
-<Optional explanation of why, compatibility impact, or validation details>
-
-Refs #<issue>  # optional
+(#<issue>)  # optional
 ```
 
 - Branch names use two to five meaningful lowercase kebab-case terms, such as
