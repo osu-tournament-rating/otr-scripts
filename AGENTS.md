@@ -1,87 +1,104 @@
 # AGENTS.md
 
-## Repository Purpose
+## Repository purpose
 
-Infrastructure automation and operational scripts for the o!TR
-(osu! Tournament Rating) platform. Handles database backup/archival,
-API client generation, rating processor execution, and public data exports.
+This repository contains Python operational tooling for the osu! Tournament
+Rating platform. It creates and restores PostgreSQL archives, runs the rating
+processor image, and regenerates the public archive index.
 
-## Environment Setup
+## Runtime and setup
 
-Scripts expect to run from the production server or with manual environment override.
+- Use Python 3.14 and `uv` from the repository root.
+- Create the environment with `uv venv --python 3.14` and install the project
+  with `uv pip install .`. Install `'.[e2e]'` only when running external tests.
+- Copy `.env.example` to `.env` and populate every required setting before
+  invoking the CLI. `.env` contains credentials and local infrastructure paths;
+  never commit it or log secret values.
+- `lib.config` loads `.env` during import. Even commands that do not obviously
+  use every setting require a complete configuration.
+
+## CLI and architecture
+
+Invoke operations from the repository root with:
 
 ```bash
-# Copy secrets template and populate with actual values
-cp src/env/secrets.template.env src/env/secrets.env
-# Edit secrets.env with DATABASE_PASSWORD and RABBITMQ_URL
+uv run python src/main.py --script <operation> [options]
 ```
 
-All .env files must end with a blank newline.
+`--script` accepts one or more operations and runs them in the supplied order:
 
-## Commands
+- `archive --archive-bucket <test|dev|public|production>` creates a gzipped
+  database archive and uploads it to the mapped Google Cloud Storage bucket.
+  `--upload-hash` also publishes a SHA256 file. Public archives include the full
+  schema but data only from the explicit whitelist in `lib/scripts/db.py`; dev
+  archives exclude sensitive table data; production and test archives are full
+  dumps. A public upload also refreshes the HTML index.
+- `recovery --recovery-bucket <bucket>` downloads and restores the newest archive
+  from that bucket. `--recovery-src <path.gz>` restores a local archive instead;
+  these source options are mutually exclusive.
+- `processor` pulls `stagecodes/otr-processor:<TAG>` and runs it against the
+  configured PostgreSQL and RabbitMQ services using host networking.
+- `refresh-index` lists the public bucket and writes the archive index beneath
+  `PUBLIC_HTML_DIR`.
 
-All commands assume you're in `~/otr-scripts/src/`:
+The CLI contract lives in `src/lib/cli.py`, configuration in
+`src/lib/config.py`, and operation implementations in `src/lib/`. Keep bucket
+names and table inclusion policy in their existing constants and database
+modules rather than duplicating them elsewhere.
 
-```bash
-# Load environment (required before running any script)
-source load-env.sh
+## Operational safety
 
-# Override environment manually (local development)
-ENV=staging source load-env.sh
+- Treat `archive`, `recovery`, and `processor` as live-infrastructure operations.
+  Confirm `ENVIRONMENT`, `TAG`, database container/name, o!TR web directory, GCS
+  bucket mapping, and RabbitMQ URL before running them.
+- Recovery is destructive: it stops services, drops and recreates the configured
+  database, imports the dump, and removes files from `DUMP_DIR` after success.
+  Never run it as validation against a populated environment.
+- By default, recovery takes down and restarts the full Compose stack. Pass
+  `--db-only` only for local development when recovery should stop and start the
+  database container without restarting the rest of the stack.
+- Keep the public data whitelist deliberately narrow and the dev blacklist
+  protective. Review schema changes against both lists so credentials, audit
+  records, logs, and other private data cannot enter public or development
+  exports.
+- Use argument lists for subprocesses where practical. When a pipeline or shell
+  expansion is required, quote paths and preserve upstream command failures.
+- Do not run deployments, upload archives, restore databases, publish indexes, or
+  start the processor merely to test a code change.
 
-# Database operations (production only)
-bash db/archive-full.sh      # Full database backup to GCS
-bash db/archive-dev.sh       # Dev replica (excludes sensitive data)
-bash db/archive-public.sh    # Public replica (whitelisted tables only)
-bash db/import-dump.sh <dump.gz> [container]  # Import database dump
-bash db/disaster-recovery.sh # Restore latest dump from GCS
+## Validation
 
-# Run rating processor
-bash processor/otr-processor-job.sh
+- Run `ruff check src tests` for static checks.
+- Run `python -m compileall -q src` for a syntax/import compilation check.
+- Run `python -m pytest --collect-only tests` to verify test discovery without
+  contacting external services.
+- External tests require Docker and GCS credentials. Run
+  `python -m pytest -m e2e tests/e2e` only when explicitly validating the latest
+  public archive; the test downloads it and imports it into an isolated
+  `postgres:17` container, not the configured application database.
+- Exercise CLI validation with `--help` or invalid argument combinations. Avoid
+  a valid operational invocation unless its external effects are intended.
 
-# Generate and publish API client (run from anywhere)
-./update-api-client.sh
-./update-api-client.sh --help
+## Git conventions
+
+```text
+Branch: <short-kebab-case-description>
+
+Commit:
+<Imperative verb> <specific outcome>
+
+<Optional explanation of why, compatibility impact, or validation details>
+
+Refs #<issue>  # optional
 ```
 
-## Architecture
-
-### Environment Configuration (src/env/)
-
-Three-layer configuration loaded by `load-env.sh`:
-
-1. `shared.env` - Common settings (DATABASE_CONTAINER, DATABASE_USER, GCS buckets)
-2. `{staging,production}.env` - Environment-specific settings
-3. `secrets.env` - Credentials (git-ignored)
-
-Environment auto-detection from hostname: `otr-staging` → staging, `otr-prod` → production.
-
-### Database Scripts (src/db/)
-
-- `archive-full.sh` - Complete backup, production-only
-- `archive-dev.sh` - Excludes auth tables, API keys, audit logs
-- `archive-public.sh` - Only public-safe tables, adds GPG signature + checksum
-- `import-dump.sh` - Utility to import gzipped dumps into Docker PostgreSQL
-- `disaster-recovery.sh` - Downloads and restores latest GCS dump
-
-### API Client Generation (src/update-api-client.sh)
-
-Generates TypeScript API client from otr-api Swagger spec:
-
-1. Runs `dotnet run --swagger-to-file` in API project
-2. Runs `nswag run` to generate TypeScript client
-3. Builds and formats generated code
-4. Interactive prompts for npm version bump and publishing
-
-Configurable paths via environment variables: `API_DIR`, `CLIENTS_DIR`, `TS_CLIENT_DIR`.
-
-## Script Patterns
-
-All scripts follow these conventions:
-
-- `set -e` for immediate exit on error
-- Source `load-env.sh` at the start
-- Validate required environment variables before execution
-- Production scripts check `$ENVIRONMENT == "production"` and refuse to run elsewhere
-- Use `docker exec` for PostgreSQL operations
-- Upload to GCS buckets specified in environment config
+- Branch names use two to five meaningful lowercase kebab-case terms, such as
+  `agent-skills-refactor`, `rating-decay-window`, or `player-layout-fix`.
+- Do not require `feature/`, `fix/`, `hotfix/`, `chore/`, usernames, vendors, or
+  issue numbers.
+- Tool-generated, Dependabot, upstream-sync, and scratch-worktree branches are
+  exceptions.
+- Commit subjects use sentence case and imperative mood, preferably at most 72
+  characters, without a trailing period or Conventional Commit prefix.
+- Avoid opaque subjects such as `fmt`, `prettier`, `cleanup`, or `(wip)`.
+- Let GitHub add pull request numbers and merge metadata.
