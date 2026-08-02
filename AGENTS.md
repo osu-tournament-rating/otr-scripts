@@ -52,8 +52,9 @@ modules rather than duplicating them elsewhere.
   Confirm `ENVIRONMENT`, `TAG`, database container/name, o!TR web directory, GCS
   bucket mapping, and RabbitMQ URL before running them.
 - Recovery is destructive: it stops services, drops and recreates the configured
-  database, imports the dump, and removes files from `DUMP_DIR` after success.
-  Never run it as validation against a populated environment.
+  database, and imports the dump. A downloaded archive is retained after a
+  successful restore; only older archives of the same kind are removed from
+  `DUMP_DIR`. Never run recovery as validation against a populated environment.
 - By default, recovery takes down and restarts the full Compose stack. Pass
   `--db-only` only for local development when recovery should stop and start the
   database container without restarting the rest of the stack.
