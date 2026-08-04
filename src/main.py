@@ -8,13 +8,11 @@ from lib.constants import scripts
 
 args = cli.init()
 
-logs.init(args.log_dir)
+logs.init()
 logger = logging.getLogger(__name__)
 
 
 def main():
-    logger.info(f"Resolved args: {args}")
-
     script_map: dict[str, Callable] = {
         scripts.ARCHIVE: partial(db.archive, args),
         scripts.PROCESSOR: processor.run,
@@ -23,7 +21,11 @@ def main():
     }
 
     for script in args.scripts:
-        script_map[script]()
+        with logs.script_log(args.log_dir, script) as log_path:
+            logger.info(f"Running '{script}', logging to {log_path}")
+            logger.info(f"Resolved args: {args}")
+
+            script_map[script]()
 
 
 if __name__ == "__main__":
