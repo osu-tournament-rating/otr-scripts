@@ -29,10 +29,11 @@ uv run python src/main.py --script <operation> [options]
 
 - `archive --archive-bucket <test|dev|public|production>` creates a gzipped
   database archive and uploads it to the mapped Google Cloud Storage bucket.
-  `--upload-hash` also publishes a SHA256 file. Public archives include the full
-  schema but data only from the explicit whitelist in `lib/scripts/db.py`; dev
-  archives exclude sensitive table data; production and test archives are full
-  dumps. A public upload also refreshes the HTML index.
+  Public archives always publish a SHA256 file alongside the archive;
+  `--upload-hash` extends that to the other buckets. Public archives include the
+  full schema but data only from the explicit whitelist in `lib/scripts/db.py`;
+  dev archives exclude sensitive table data; production and test archives are
+  full dumps. A public upload also refreshes the HTML index.
 - `recovery --recovery-bucket <bucket>` downloads and restores the newest archive
   from that bucket. `--recovery-src <path.gz>` restores a local archive instead;
   these source options are mutually exclusive.

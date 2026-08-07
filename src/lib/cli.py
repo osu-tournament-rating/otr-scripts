@@ -80,7 +80,8 @@ def add_args(parser: ArgumentParser):
     archive_args.add_argument(
         "--upload-hash",
         action="store_true",
-        help="Whether to upload a SHA256 hash with the archive",
+        help="Whether to upload a SHA256 hash with the archive "
+        "(public archives always upload one)",
     )
 
     recovery_args = parser.add_argument_group(

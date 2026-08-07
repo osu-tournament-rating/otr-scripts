@@ -206,7 +206,9 @@ def archive(args: ScriptArgs):
     try:
         gcs_utils.upload(dump, bucket)
 
-        if args.upload_hash:
+        # Public replicas are always published with a checksum so consumers
+        # (including otr-replay) can verify their downloads.
+        if args.upload_hash or bucket == buckets.PUBLIC:
             # Upload sha256
             hash_loc = hash(dump)
             gcs_utils.upload(hash_loc, bucket)
