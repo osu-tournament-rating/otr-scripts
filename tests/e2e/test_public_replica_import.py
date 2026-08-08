@@ -10,7 +10,6 @@ import pytest
 from dotenv import dotenv_values
 from google.cloud import storage
 
-
 pytestmark = pytest.mark.e2e
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

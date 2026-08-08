@@ -1,6 +1,6 @@
-from contextlib import contextmanager
-from datetime import datetime, timezone
 import logging
+from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
@@ -18,7 +18,7 @@ def init():
 @contextmanager
 def script_log(log_dir: Path, script: str):
     """Routes logs emitted within the context to a log file for this script"""
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     log_dir.mkdir(parents=True, exist_ok=True)
 
     log_path = log_dir / f"{script}_{timestamp}.log"

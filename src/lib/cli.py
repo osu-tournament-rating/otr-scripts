@@ -1,7 +1,8 @@
 import argparse
+from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from pathlib import Path
-from argparse import ArgumentParser, Namespace
+
 from lib.constants import buckets, scripts
 
 

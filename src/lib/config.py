@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 
@@ -28,7 +29,7 @@ class Config:
 def _env_or_throw(key: str) -> str:
     var = os.getenv(key)
     if not var:
-        raise EnvironmentError(f"Expected environment var '{key}' to be set")
+        raise OSError(f"Expected environment var '{key}' to be set")
 
     return var
 

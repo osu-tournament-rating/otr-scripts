@@ -2,15 +2,16 @@
 import itertools
 import logging
 import shlex
-from datetime import datetime, timezone
+import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
+
 from lib.cli import ScriptArgs
 from lib.config import config
 from lib.constants import buckets
 from lib.gcs import gcs_utils
 from lib.public_html import generate_index
 from lib.security import hash
-import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +69,18 @@ def _import(dump: Path, db_only: bool = False) -> bool:
         if db_only
         else f"docker compose{profile} down"
     )
-    subprocess.run(stop, shell=True, cwd=config.otr_web_dir)
+    subprocess.run(stop, shell=True, cwd=config.otr_web_dir, check=False)
 
     start_db = f"docker compose{profile} up -d db"
-    subprocess.run(start_db, shell=True, cwd=config.otr_web_dir)
+    subprocess.run(start_db, shell=True, cwd=config.otr_web_dir, check=False)
 
     bash = f"psql -U {config.db_user} -d template1 -c 'DROP DATABASE IF EXISTS {config.db_name};' \
             && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
             && psql -U {config.db_user} -d {config.db_name}"
 
-    proc1 = subprocess.run(f"gunzip -c {dump}", shell=True, capture_output=True)
+    proc1 = subprocess.run(
+        f"gunzip -c {dump}", shell=True, capture_output=True, check=False
+    )
 
     if proc1.stderr:
         logger.error(f"gunzip produced errors: {proc1.stderr}")
@@ -87,11 +90,12 @@ def _import(dump: Path, db_only: bool = False) -> bool:
         args=f'docker exec -i {config.db_container} bash -c "{bash}"',
         shell=True,
         input=proc1.stdout,
+        check=False,
     )
 
     if not db_only:
         start_all = f"docker compose{profile} up -d"
-        subprocess.run(start_all, shell=True, cwd=config.otr_web_dir)
+        subprocess.run(start_all, shell=True, cwd=config.otr_web_dir, check=False)
 
     if proc2.stderr:
         logger.error(f"docker exec produced errors: {proc2.stderr}")
@@ -104,7 +108,7 @@ def _import(dump: Path, db_only: bool = False) -> bool:
 
 def remove_dumps():
     cmd = f"rm {config.dump_dir}/*"
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=True, check=False)
 
 
 def _pg_dump_options(option: str, patterns: list[str]) -> list[str]:
@@ -171,7 +175,7 @@ def _export_command(replica: str, dest: Path) -> str:
 
 
 def _export(replica: str) -> tuple[bool, Path]:
-    dump_file_format = datetime.now(timezone.utc).strftime(
+    dump_file_format = datetime.now(UTC).strftime(
         f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
     )
     config.dump_dir.mkdir(parents=True, exist_ok=True)
@@ -182,7 +186,7 @@ def _export(replica: str) -> tuple[bool, Path]:
 
     logger.info(f"Running subprocess {cmd}")
 
-    result = subprocess.run(["bash", "-o", "pipefail", "-c", cmd])
+    result = subprocess.run(["bash", "-o", "pipefail", "-c", cmd], check=False)
 
     if result.returncode == 0:
         logger.info("Database archive creation succeeded")
@@ -195,7 +199,7 @@ def _export(replica: str) -> tuple[bool, Path]:
 def archive(args: ScriptArgs):
     bucket = args.archive_bucket
     if not bucket:
-        raise Exception("Archive bucket must be populated")
+        raise ValueError("Archive bucket must be populated")
 
     success, dump = _export(bucket)
 
@@ -234,7 +238,7 @@ def recovery(args: ScriptArgs):
 
     bucket = args.recovery_bucket
     if not bucket:
-        raise Exception("Recovery bucket must be populated")
+        raise ValueError("Recovery bucket must be populated")
 
     # Download and import
     out_file = gcs_utils.download_latest(bucket, config.dump_dir)

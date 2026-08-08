@@ -11,7 +11,7 @@ def run(cmd: list[str]) -> bool:
     # Run a subprocess, combine stderr with stdout
     # to simplify logging.
     try:
-        subprocess.run(cmd, shell=True)
+        subprocess.run(cmd, shell=True, check=True)
     except CalledProcessError as e:
         logger.exception(f"Failed to execute process (code {e.returncode})")
         return False

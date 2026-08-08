@@ -1,7 +1,8 @@
 import logging
 from pathlib import Path
-from lib.constants import buckets
+
 from lib.config import config
+from lib.constants import buckets
 from lib.gcs import gcs_utils
 
 logger = logging.getLogger(__name__)

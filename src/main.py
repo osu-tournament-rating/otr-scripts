@@ -1,10 +1,10 @@
-from functools import partial
 import logging
-from typing import Callable
+from collections.abc import Callable
+from functools import partial
 
 from lib import cli, logs, processor, public_html
-from lib.scripts import db
 from lib.constants import scripts
+from lib.scripts import db
 
 args = cli.init()
 

@@ -19,7 +19,7 @@ def get_bucket_name(bucket: str):
         case buckets.PROD:
             bucket_name = config.gcs_prod_bucket
         case _:
-            raise Exception("Invalid bucket")
+            raise ValueError(f"Invalid bucket '{bucket}'")
     return bucket_name
 
 
@@ -28,14 +28,14 @@ def list_archives(bucket: str):
     blobs = storage_client.list_blobs(bucket_name)
 
     filtered = list(filter(lambda f: f.name.endswith(".gz"), blobs))
-    return list(sorted(filtered, key=lambda b: b.time_created, reverse=True))
+    return sorted(filtered, key=lambda b: b.time_created, reverse=True)
 
 
 def list_all(bucket: str):
     bucket_name = get_bucket_name(bucket)
     blobs = storage_client.list_blobs(bucket_name)
 
-    return list(sorted(blobs, key=lambda b: b.name, reverse=True))
+    return sorted(blobs, key=lambda b: b.name, reverse=True)
 
 
 def upload(f: Path, bucket: str):
@@ -46,7 +46,7 @@ def upload(f: Path, bucket: str):
         bucket (str): Bucket name
     """
     if not f.is_file():
-        raise Exception(f"Cannot upload non-file {f}")
+        raise ValueError(f"Cannot upload non-file {f}")
 
     bucket_name = get_bucket_name(bucket)
 
