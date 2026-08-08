@@ -23,9 +23,9 @@ def generate_index():
         else:
             misc.append(b)
 
-    # Display misc above archives.
-    sorted_archives = sorted(archives, key=lambda b: b.time_created, reverse=True)
-    sorted_misc = sorted(misc, key=lambda b: b.name)
+    # Display misc above archives, each sorted by name descending.
+    sorted_archives = sorted(archives, key=lambda b: b.name, reverse=True)
+    sorted_misc = sorted(misc, key=lambda b: b.name, reverse=True)
     combined = sorted_misc + sorted_archives
 
     link_template = f"https://storage.googleapis.com/{config.gcs_public_bucket}/{{}}"
