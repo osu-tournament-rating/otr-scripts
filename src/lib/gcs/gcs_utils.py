@@ -28,7 +28,7 @@ def list_archives(bucket: str):
     blobs = storage_client.list_blobs(bucket_name)
 
     filtered = list(filter(lambda f: f.name.endswith(".gz"), blobs))
-    return sorted(filtered, key=lambda b: b.time_created, reverse=True)
+    return sorted(filtered, key=lambda b: b.name, reverse=True)
 
 
 def list_all(bucket: str):
@@ -66,7 +66,7 @@ def download_latest(bucket: str, out_dir: Path) -> Path | None:
     logger.info(f"Downloading latest archive from {bucket_name}")
 
     filtered = list_archives(bucket)
-    latest = max(filtered, key=lambda b: b.time_created, default=None)
+    latest = max(filtered, key=lambda b: b.name, default=None)
 
     if not latest:
         logger.error("Could not identify latest blob")

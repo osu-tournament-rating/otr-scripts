@@ -176,7 +176,7 @@ def _export_command(replica: str, dest: Path) -> str:
 
 def _export(replica: str) -> tuple[bool, Path]:
     dump_file_format = datetime.now(UTC).strftime(
-        f"otr-{replica}-replica_%Y-%m-%d_%H_%M_%S.gz"
+        f"otr-{replica}-replica_%Y-%m-%dT%H:%M:%SZ.gz"
     )
     config.dump_dir.mkdir(parents=True, exist_ok=True)
 
