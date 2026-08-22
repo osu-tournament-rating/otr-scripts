@@ -44,6 +44,7 @@ jobs:
             REMOTE_PATH="$1"
             ARGS="$2"
             cd "$REMOTE_PATH"
-            eval "set -- $ARGS"
+            set -f
+            set -- $ARGS
             ~/.local/bin/uv run python src/main.py "$@"
           EOF
