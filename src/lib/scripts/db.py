@@ -35,6 +35,7 @@ public_data_table_whitelist = [
 # Include all tables besides these in dev dumps (for internal dev use)
 dev_blacklist = [
     "public.api_keys",
+    "public.audit_events",
     "public.auth_accounts",
     "public.auth_sessions",
     "public.auth_users",
@@ -42,6 +43,10 @@ dev_blacklist = [
     "public.game_audits",
     "public.game_score_audits",
     "public.logs",
+    "public.o_auth_clients",
+    "public.player_friends",
+    "public.user_settings",
+    "public.users",
 ]
 
 
