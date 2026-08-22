@@ -42,8 +42,6 @@ dev_blacklist = [
     "public.game_audits",
     "public.game_score_audits",
     "public.logs",
-    "public.match_audits",
-    "public.tournament_audits",
 ]
 
 
