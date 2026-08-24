@@ -32,8 +32,9 @@ uv run python src/main.py --script <operation> [options]
   Public archives always publish a SHA256 file alongside the archive;
   `--upload-hash` extends that to the other buckets. Public archives include the
   full schema but data only from the explicit whitelist in `lib/scripts/db.py`;
-  dev archives exclude sensitive table data; production and test archives are
-  full dumps. A public upload also refreshes the HTML index.
+  dev archives mirror production row for row with the credential columns in
+  `dev_secret_columns` redacted; production and test archives are full dumps. A
+  public upload also refreshes the HTML index.
 - `recovery --recovery-bucket <bucket>` downloads and restores the newest archive
   from that bucket. `--recovery-src <path.gz>` restores a local archive instead;
   these source options are mutually exclusive.
@@ -59,10 +60,15 @@ modules rather than duplicating them elsewhere.
 - By default, recovery takes down and restarts the full Compose stack. Pass
   `--db-only` only for local development when recovery should stop and start the
   database container without restarting the rest of the stack.
-- Keep the public data whitelist deliberately narrow and the dev blacklist
-  protective. Review schema changes against both lists so credentials, audit
-  records, logs, and other private data cannot enter public or development
-  exports.
+- Keep the public data whitelist deliberately narrow. Review schema changes
+  against it so credentials, audit records, logs, and other private data cannot
+  enter public exports.
+- Dev archives carry every table and row, including audits, logs, and real user
+  records, so treat them as production data and keep them on trusted
+  infrastructure. Only `dev_secret_columns` is withheld: session and API key
+  material, and the osu! OAuth tokens in `auth_accounts`, whose blast radius
+  reaches accounts o!TR does not control. Add any new secret-bearing column to
+  that map; the export fails if a listed column is missing or is not text.
 - Use argument lists for subprocesses where practical. When a pipeline or shell
   expansion is required, quote paths and preserve upstream command failures.
 - Do not run deployments, upload archives, restore databases, publish indexes, or
@@ -76,10 +82,14 @@ modules rather than duplicating them elsewhere.
 - Run `python -m compileall -q src` for a syntax/import compilation check.
 - Run `python -m pytest --collect-only tests` to verify test discovery without
   contacting external services.
-- External tests require Docker and GCS credentials. Run
-  `python -m pytest -m e2e tests/e2e` only when explicitly validating the latest
-  public archive; the test downloads it and imports it into an isolated
-  `postgres:17` container, not the configured application database.
+- Run `python -m pytest tests -m 'not e2e'` for the export unit tests. They stub
+  `lib.config` and `lib.gcs.client`, so they need neither `.env` nor GCS.
+- External tests require Docker, and the public archive test also needs GCS
+  credentials. Run `python -m pytest -m e2e tests/e2e` only when explicitly
+  validating archives; both tests use isolated `postgres:17` containers, never
+  the configured application database. `test_dev_replica_archive.py` seeds known
+  credential values, exports a dev replica, and fails if any reaches the
+  archive.
 - Exercise CLI validation with `--help` or invalid argument combinations. Avoid
   a valid operational invocation unless its external effects are intended.
 
