@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 @dataclass(frozen=True)
 class Config:
-    # 'staging' or 'production'
+    # 'dev', 'staging', or 'production'
     environment: str
     tag: str
     dump_dir: Path

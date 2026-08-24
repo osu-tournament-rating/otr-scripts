@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - production
+          - dev
 
 jobs:
   determine-environment:
