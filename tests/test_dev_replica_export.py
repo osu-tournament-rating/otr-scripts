@@ -64,6 +64,28 @@ def test_audit_and_log_tables_are_mirrored():
         assert table not in excluded
 
 
+def test_redacted_rows_load_before_foreign_keys_are_added():
+    command = dev_command()
+
+    pre_data = command.index("--section=pre-data")
+    data = command.index("--section=data")
+    post_data = command.index("--section=post-data")
+    redacted = max(
+        command.index(f"'redacted:{secret}:'")
+        for secrets in db.dev_secret_columns.values()
+        for secret in secrets
+    )
+
+    assert pre_data < data < redacted < post_data
+
+
+def test_only_the_pre_data_section_drops_objects():
+    command = dev_command()
+
+    assert command.count("--if-exists") == 1
+    assert command.index("--if-exists") < command.index("--section=data")
+
+
 def test_every_secret_column_is_redacted():
     command = dev_command()
 

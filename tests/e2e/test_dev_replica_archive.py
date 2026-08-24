@@ -35,6 +35,7 @@ SECRETS = {
     "session_token": "session-bearer-b4de",
     "verification_value": "verification-value-1a2b",
     "api_key": "otr-api-key-9e0f",
+    "client_secret": "oauth-client-secret-5d3c",
 }
 
 SCHEMA = """
@@ -78,6 +79,23 @@ CREATE TABLE api_keys (
     reference_id text NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE users (id integer PRIMARY KEY, player_id integer NOT NULL);
+
+-- Integer key and a varchar secret, unlike the text-keyed auth tables.
+CREATE TABLE o_auth_clients (
+    id integer PRIMARY KEY,
+    secret character varying(128) NOT NULL,
+    rate_limit_override integer,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Referencing a redacted table: its foreign key is validated on restore.
+CREATE TABLE o_auth_client_admin_note (
+    id integer PRIMARY KEY,
+    note text NOT NULL,
+    o_auth_client_id integer NOT NULL REFERENCES o_auth_clients(id) ON DELETE CASCADE
+);
+
 CREATE TABLE logs (message text, level integer);
 
 CREATE TABLE match_audits (
@@ -111,6 +129,12 @@ INSERT INTO auth_verifications VALUES
 
 INSERT INTO api_keys VALUES ('key-1', 'ci', '{SECRETS["api_key"]}', 'user-1');
 
+INSERT INTO users VALUES (10, 1), (11, 2);
+
+INSERT INTO o_auth_clients VALUES (100, '{SECRETS["client_secret"]}', 500, 10);
+
+INSERT INTO o_auth_client_admin_note VALUES (1, 'issued for the bracket bot', 100);
+
 INSERT INTO logs VALUES ('rating batch finished', 2), ('match ingested', 1);
 
 INSERT INTO match_audits VALUES (1, 55, 1), (2, 56, 1);
@@ -125,6 +149,9 @@ MIRRORED_COUNTS = {
     "api_keys": 1,
     "logs": 2,
     "match_audits": 2,
+    "users": 2,
+    "o_auth_clients": 1,
+    "o_auth_client_admin_note": 1,
 }
 
 
@@ -170,6 +197,7 @@ def assert_redaction_markers(dump: str):
         "redacted:token:session-1",
         "redacted:value:verification-1",
         "redacted:key:key-1",
+        "redacted:secret:100",
     ):
         assert marker in dump, f"Expected redacted value {marker} in the archive"
 
@@ -179,6 +207,7 @@ def assert_mirrored_tables(dump: str):
     assert "rating batch finished" in dump
     assert "match ingested" in dump
     assert "peppy@example.test" in dump
+    assert "issued for the bracket bot" in dump
 
 
 def assert_row_counts(container: PostgresContainer):

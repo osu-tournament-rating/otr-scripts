@@ -47,6 +47,7 @@ dev_secret_columns = {
     ),
     "public.auth_sessions": ("token",),
     "public.auth_verifications": ("value",),
+    "public.o_auth_clients": ("secret",),
 }
 
 # Redacted values are text keyed on the row id, keeping NOT NULL and UNIQUE.
@@ -252,14 +253,22 @@ def _redacted_copy_command(table: str, columns: list[Column]) -> str:
 
 
 def _dev_export_command(columns_by_table: dict[str, list[Column]], dest: Path) -> str:
-    # auth_users must load with the main dump, before the appended rows that
-    # reference it.
+    # Dump by section so the redacted rows land alongside the rest of the data,
+    # before post-data adds the foreign keys that would validate against them.
     tables = list(dev_secret_columns)
 
     return _gzip_dump_command(
         [
-            _pg_dump_command(_pg_dump_options("--exclude-table-data", tables)),
+            _pg_dump_command(["--section=pre-data"]),
+            _pg_dump_command(
+                [
+                    "--section=data",
+                    *_pg_dump_options("--exclude-table-data", tables),
+                ],
+                clean=False,
+            ),
             *(_redacted_copy_command(table, columns_by_table[table]) for table in tables),
+            _pg_dump_command(["--section=post-data"], clean=False),
         ],
         dest,
     )

@@ -66,9 +66,13 @@ modules rather than duplicating them elsewhere.
 - Dev archives carry every table and row, including audits, logs, and real user
   records, so treat them as production data and keep them on trusted
   infrastructure. Only `dev_secret_columns` is withheld: session and API key
-  material, and the osu! OAuth tokens in `auth_accounts`, whose blast radius
-  reaches accounts o!TR does not control. Add any new secret-bearing column to
-  that map; the export fails if a listed column is missing or is not text.
+  material, the `o_auth_clients` secret, and the osu! OAuth tokens in
+  `auth_accounts`, whose blast radius reaches accounts o!TR does not control.
+  Add any new secret-bearing column to that map; the export fails if a listed
+  column is missing or is not text.
+- The dev dump is emitted per section, so every row loads before post-data adds
+  the foreign keys. Keep that ordering: a redacted table with dependents fails
+  to restore if its data lands after the constraints.
 - Use argument lists for subprocesses where practical. When a pipeline or shell
   expansion is required, quote paths and preserve upstream command failures.
 - Do not run deployments, upload archives, restore databases, publish indexes, or
