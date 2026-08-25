@@ -1,4 +1,5 @@
 import logging
+import sys
 from collections.abc import Callable
 from functools import partial
 
@@ -25,7 +26,9 @@ def main():
             logger.info(f"Running '{script}', logging to {log_path}")
             logger.info(f"Resolved args: {args}")
 
-            script_map[script]()
+            if script_map[script]() is False:
+                logger.error(f"'{script}' failed")
+                sys.exit(1)
 
 
 if __name__ == "__main__":

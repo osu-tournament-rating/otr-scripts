@@ -34,7 +34,8 @@ Run commands from the repository root with Python 3.14 and `uv`.
 - `recovery --recovery-bucket <bucket>` or `--recovery-src <path.gz>` (mutually
   exclusive) stops services, drops and recreates the database, and imports.
   Only older archives of the same kind are removed from `DUMP_DIR`. `--db-only`
-  restarts only the database container and is for local development.
+  leaves the Compose stack running and drops only connections to the target
+  database.
 - `processor` pulls `stagecodes/otr-processor:<TAG>` and runs it with host
   networking against the configured PostgreSQL and RabbitMQ.
 - `refresh-index` writes the archive index beneath `PUBLIC_HTML_DIR`.
