@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from lib.config import config
@@ -74,13 +75,17 @@ def download_latest(bucket: str, out_dir: Path) -> Path | None:
 
     # Download
     output_loc = out_dir / latest.name
+    part = out_dir / f"{latest.name}.{os.getpid()}.part"
     try:
-        with open(output_loc, "wb") as f:
+        with open(part, "wb") as f:
             storage_client.download_blob_to_file(latest, f)
 
-        logger.info(f"Downloaded blob {latest} to {out_dir}")
+        part.replace(output_loc)
+        logger.info(f"Downloaded blob {latest} to {output_loc}")
     except Exception:
         logger.exception("Failed to download latest archive")
         return None
+    finally:
+        part.unlink(missing_ok=True)
 
     return output_loc

@@ -102,8 +102,8 @@ def add_args(parser: ArgumentParser):
     recovery_args.add_argument(
         "--db-only",
         action="store_true",
-        help="During recovery, only stop and start the database container instead "
-        "of restarting the entire docker-compose stack (useful for local dev)",
+        help="During recovery, restore in place instead of restarting the "
+        "docker-compose stack",
     )
 
     args = parser.parse_args()

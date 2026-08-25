@@ -4,6 +4,7 @@ import logging
 import re
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -60,68 +61,113 @@ class Column:
     data_type: str
 
 
+def _compose(command: str):
+    profile = " --profile node-exporter" if config.environment == "production" else ""
+    subprocess.run(
+        f"docker compose{profile} {command}",
+        shell=True,
+        cwd=config.otr_web_dir,
+        check=False,
+    )
+
+
+def _wait_for_db(timeout: float = 60) -> bool:
+    deadline = time.monotonic() + timeout
+
+    while True:
+        ready = subprocess.run(
+            ["docker", "exec", config.db_container, "pg_isready", "-U", config.db_user],
+            capture_output=True,
+            check=False,
+        )
+        if ready.returncode == 0:
+            return True
+        if time.monotonic() >= deadline:
+            logger.error(f"{config.db_container} not ready after {timeout:.0f}s")
+            return False
+        time.sleep(1)
+
+
+def _restore_steps(dump: Path) -> list[list[str]]:
+    load = shlex.join(
+        [
+            "docker",
+            "exec",
+            "-i",
+            config.db_container,
+            "psql",
+            "-U",
+            config.db_user,
+            "-d",
+            config.db_name,
+            "-v",
+            "ON_ERROR_STOP=1",
+            "--quiet",
+        ]
+    )
+
+    return [
+        _psql_command(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            f"WHERE datname = '{config.db_name}' AND pid <> pg_backend_pid()",
+            db="template1",
+        ),
+        _psql_command(f"DROP DATABASE IF EXISTS {config.db_name}", db="template1"),
+        _psql_command(f"CREATE DATABASE {config.db_name}", db="template1"),
+        ["bash", "-o", "pipefail", "-c", f"gunzip -c {shlex.quote(str(dump))} | {load}"],
+    ]
+
+
 def _import(dump: Path, db_only: bool = False) -> bool:
     """Import a local dump to the database
 
     Args:
         dump: Path to the gzipped database dump to restore.
-        db_only: When True, only stop and start the database container instead
-            of restarting the entire docker-compose stack. Useful for local dev
-            where tearing down the whole stack is undesirable.
+        db_only: When True, leave the docker-compose stack running and restore
+            in place, dropping only the connections to the target database.
     """
     if dump.suffix != ".gz":
         logger.error(f"Expected dump path to end with '.gz': {dump}")
         return False
 
-    # Restore cannot happen if there are any active connections
+    if not db_only:
+        _compose("down")
 
-    profile = " --profile node-exporter" if config.environment == "production" else ""
+    _compose("up -d db")
 
-    stop = (
-        f"docker compose{profile} stop db"
-        if db_only
-        else f"docker compose{profile} down"
-    )
-    subprocess.run(stop, shell=True, cwd=config.otr_web_dir, check=False)
-
-    start_db = f"docker compose{profile} up -d db"
-    subprocess.run(start_db, shell=True, cwd=config.otr_web_dir, check=False)
-
-    bash = f"psql -U {config.db_user} -d template1 -c 'DROP DATABASE IF EXISTS {config.db_name};' \
-            && psql -U {config.db_user} -d template1 -c 'CREATE DATABASE {config.db_name};' \
-            && psql -U {config.db_user} -d {config.db_name}"
-
-    proc1 = subprocess.run(
-        f"gunzip -c {dump}", shell=True, capture_output=True, check=False
-    )
-
-    if proc1.stderr:
-        logger.error(f"gunzip produced errors: {proc1.stderr}")
+    if not _wait_for_db():
         return False
 
-    proc2 = subprocess.run(
-        args=f'docker exec -i {config.db_container} bash -c "{bash}"',
-        shell=True,
-        input=proc1.stdout,
-        check=False,
-    )
+    started = time.monotonic()
+    returncode = 0
+    for step in _restore_steps(dump):
+        returncode = subprocess.run(step, check=False).returncode
+        if returncode != 0:
+            break
 
     if not db_only:
-        start_all = f"docker compose{profile} up -d"
-        subprocess.run(start_all, shell=True, cwd=config.otr_web_dir, check=False)
+        _compose("up -d")
 
-    if proc2.stderr:
-        logger.error(f"docker exec produced errors: {proc2.stderr}")
+    elapsed = time.monotonic() - started
+    if returncode != 0:
+        logger.error(
+            f"Restore of {dump.name} into {config.db_name} failed after "
+            f"{elapsed:.0f}s (exit code {returncode})"
+        )
         return False
 
-    remove_dumps()
-
+    logger.info(f"Restored {dump.name} into {config.db_name} in {elapsed:.0f}s")
     return True
 
 
-def remove_dumps():
-    cmd = f"rm {config.dump_dir}/*"
-    subprocess.run(cmd, shell=True, check=False)
+def prune_dumps(keep: Path):
+    """Remove older archives of the same kind as `keep` from its directory"""
+    kind = keep.name.rsplit("_", 1)[0]
+
+    for old in keep.parent.glob(f"{kind}_*.gz"):
+        if old.name < keep.name:
+            old.unlink(missing_ok=True)
+            logger.info(f"Removed {old}")
 
 
 def _pg_dump_options(option: str, patterns: list[str]) -> list[str]:
@@ -171,7 +217,7 @@ def _split_table(table: str) -> tuple[str, str]:
     return schema, name
 
 
-def _psql_command(sql: str) -> list[str]:
+def _psql_command(sql: str, db: str | None = None) -> list[str]:
     return [
         "docker",
         "exec",
@@ -181,7 +227,7 @@ def _psql_command(sql: str) -> list[str]:
         "-U",
         config.db_user,
         "-d",
-        config.db_name,
+        db or config.db_name,
         "-Aqt",
         "--no-psqlrc",
         "-c",
@@ -352,17 +398,17 @@ def archive(args: ScriptArgs):
             # Refresh the html
             generate_index()
 
-        remove_dumps()
+        prune_dumps(dump)
+        dump.unlink()
 
     except Exception:
         logger.exception(f"Error occurred during upload of {dump} to GCS bucket")
 
 
-def recovery(args: ScriptArgs):
+def recovery(args: ScriptArgs) -> bool:
     if args.recovery_src:
         # Just import this local dump, no GCS connection needed
-        _import(args.recovery_src, db_only=args.db_only)
-        return
+        return _import(args.recovery_src, db_only=args.db_only)
 
     bucket = args.recovery_bucket
     if not bucket:
@@ -371,6 +417,10 @@ def recovery(args: ScriptArgs):
     # Download and import
     out_file = gcs_utils.download_latest(bucket, config.dump_dir)
     if not out_file:
-        return
+        return False
 
-    _import(out_file, db_only=args.db_only)
+    if not _import(out_file, db_only=args.db_only):
+        return False
+
+    prune_dumps(out_file)
+    return True
