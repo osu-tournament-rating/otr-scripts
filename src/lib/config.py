@@ -24,6 +24,10 @@ class Config:
     gcs_prod_bucket: str
     gcs_sa_json_path: Path
     rabbitmq_url: str
+    template_db_container: str
+    template_db_port: int
+    template_db_user: str
+    template_db_password: str
 
 
 def _env_or_throw(key: str) -> str:
@@ -32,6 +36,10 @@ def _env_or_throw(key: str) -> str:
         raise OSError(f"Expected environment var '{key}' to be set")
 
     return var
+
+
+def _env_or_default(key: str, default: str) -> str:
+    return os.getenv(key) or default
 
 
 def init() -> Config:
@@ -55,6 +63,10 @@ def init() -> Config:
         _env_or_throw("GCS_PROD_BUCKET"),
         Path(_env_or_throw("GCS_SA_JSON_PATH")).expanduser(),
         _env_or_throw("RABBITMQ_URL"),
+        _env_or_default("TEMPLATE_DB_CONTAINER", "otr-template-db"),
+        int(_env_or_default("TEMPLATE_DB_PORT", "5434")),
+        _env_or_default("TEMPLATE_DB_USER", "postgres"),
+        _env_or_default("TEMPLATE_DB_PASSWORD", "postgres"),
     )
 
 
