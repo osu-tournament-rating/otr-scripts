@@ -30,6 +30,10 @@ config_module.config = types.SimpleNamespace(
     gcs_prod_bucket="production",
     gcs_sa_json_path=Path("/tmp/sa.json"),
     rabbitmq_url="amqp://localhost",
+    template_db_container="otr-template-test-db",
+    template_db_port=5434,
+    template_db_user="postgres",
+    template_db_password="postgres",
 )
 sys.modules.setdefault("lib.config", config_module)
 

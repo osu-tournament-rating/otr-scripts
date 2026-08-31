@@ -40,6 +40,16 @@ Run commands from the repository root with Python 3.14 and `uv`.
 - `processor` pulls `stagecodes/otr-processor:<TAG>` and runs it with host
   networking against the configured PostgreSQL and RabbitMQ.
 - `refresh-index` writes the archive index beneath `PUBLIC_HTML_DIR`.
+- `template-db --template-action <seed|create|drop|list>` manages a dedicated
+  `postgres:17` container (`TEMPLATE_DB_CONTAINER`, `TEMPLATE_DB_PORT`,
+  `TEMPLATE_DB_USER`, `TEMPLATE_DB_PASSWORD`, optional and defaulted) holding
+  the `otr_template` database. `seed` creates or starts the container and
+  restores the latest dev archive, or `--template-src <path.gz>`, into the
+  template. `create --template-name <name>` copies the template into a new
+  instance and logs its connection string; `drop --template-name <name>`
+  removes one; `list` shows the instances and their sizes. Instance names match
+  `^[a-z][a-z0-9_]{0,30}$`. It never touches the configured application
+  database and refuses to run on ports 5432 and 5433.
 - Confirm `ENVIRONMENT`, `TAG`, database container and name, web directory,
   bucket mapping, and RabbitMQ URL before any live operation.
 

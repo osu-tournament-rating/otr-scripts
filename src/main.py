@@ -5,7 +5,7 @@ from functools import partial
 
 from lib import cli, logs, processor, public_html
 from lib.constants import scripts
-from lib.scripts import db
+from lib.scripts import db, template_db
 
 args = cli.init()
 
@@ -19,6 +19,7 @@ def main():
         scripts.PROCESSOR: processor.run,
         scripts.RECOVERY: partial(db.recovery, args),
         scripts.REFRESH_INDEX: public_html.generate_index,
+        scripts.TEMPLATE_DB: partial(template_db.run, args),
     }
 
     for script in args.scripts:

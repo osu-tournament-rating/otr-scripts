@@ -15,6 +15,9 @@ class ScriptArgs:
     recovery_src: Path | None
     db_only: bool
     upload_hash: bool
+    template_action: str | None
+    template_name: str | None
+    template_src: Path | None
 
 
 _script_options = [
@@ -22,6 +25,13 @@ _script_options = [
     scripts.PROCESSOR,
     scripts.RECOVERY,
     scripts.REFRESH_INDEX,
+    scripts.TEMPLATE_DB,
+]
+_template_actions = [
+    scripts.SEED,
+    scripts.CREATE,
+    scripts.DROP,
+    scripts.LIST,
 ]
 _buckets = [
     buckets.TEST,
@@ -55,6 +65,9 @@ def init() -> ScriptArgs:
         Path(args.recovery_src) if args.recovery_src else None,
         args.db_only,
         args.upload_hash,
+        args.template_action,
+        args.template_name,
+        Path(args.template_src) if args.template_src else None,
     )
 
 
@@ -106,6 +119,26 @@ def add_args(parser: ArgumentParser):
         "docker-compose stack",
     )
 
+    template_args = parser.add_argument_group(
+        "template-db", f"Args specific to the {scripts.TEMPLATE_DB} script"
+    )
+    template_args.add_argument(
+        "--template-action",
+        help="Action to perform against the template database container",
+        choices=_template_actions,
+    )
+    template_args.add_argument(
+        "--template-name",
+        type=str,
+        help="Name of the instance database to create or drop",
+    )
+    template_args.add_argument(
+        "--template-src",
+        type=str,
+        help="Path to a local archive to seed the template with instead of the "
+        "latest dev archive",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -113,6 +146,7 @@ def add_args(parser: ArgumentParser):
 def validate_args(args: Namespace, parser: ArgumentParser):
     validate_archive(args, parser)
     validate_disaster_recovery(args, parser)
+    validate_template_db(args, parser)
 
 
 def validate_archive(args: Namespace, parser: ArgumentParser):
@@ -131,4 +165,20 @@ def validate_disaster_recovery(args: Namespace, parser: ArgumentParser):
         parser.error(
             "Either a recovery bucket (--recovery-bucket) or a local source "
             "(--recovery-src) must be supplied to perform a disaster recovery"
+        )
+
+
+def validate_template_db(args: Namespace, parser: ArgumentParser):
+    if scripts.TEMPLATE_DB not in args.script:
+        return
+
+    if not args.template_action:
+        parser.error(
+            "An action (--template-action) must be supplied to manage template databases"
+        )
+
+    if args.template_action in (scripts.CREATE, scripts.DROP) and not args.template_name:
+        parser.error(
+            f"An instance name (--template-name) must be supplied to "
+            f"{args.template_action} a template database"
         )
