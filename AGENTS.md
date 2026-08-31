@@ -27,10 +27,11 @@ Run commands from the repository root with Python 3.14 and `uv`.
 ## Operations
 
 - `archive --archive-bucket <test|dev|public|production>` dumps and uploads.
-  Public archives publish a SHA256 file, contain the full schema but only
-  whitelisted data, and refresh the HTML index; dev excludes sensitive tables;
-  production and test are full dumps. `--upload-hash` adds the hash to the
-  other buckets.
+  Public archives publish a SHA256 file, contain the full schema but data only
+  from `public_data_table_whitelist`, and refresh the HTML index; dev mirrors
+  production row for row, excluding only the `dev_secret_columns` credential
+  columns and re-inserting them redacted; production and test are full dumps.
+  `--upload-hash` adds the hash to the other buckets.
 - `recovery --recovery-bucket <bucket>` or `--recovery-src <path.gz>` (mutually
   exclusive) stops services, drops and recreates the database, and imports.
   Only older archives of the same kind are removed from `DUMP_DIR`. `--db-only`
@@ -46,7 +47,8 @@ Run commands from the repository root with Python 3.14 and `uv`.
 
 - CLI contract in `src/lib/cli.py`, configuration in `src/lib/config.py`,
   operations in `src/lib/`.
-- Review schema changes against the public whitelist and dev blacklist so
-  credentials, audit records, and logs never enter exports.
+- Review schema changes against `public_data_table_whitelist` so private data
+  never enters public archives, and add any new credential column to
+  `dev_secret_columns`.
 - Prefer argument lists for subprocesses; quote paths and preserve upstream
   failures when a shell pipeline is unavoidable.
