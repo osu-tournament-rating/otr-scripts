@@ -100,8 +100,8 @@ def test_container_runs_on_the_configured_port():
     assert cmd.endswith("postgres:17")
 
 
-def test_connection_string_points_at_the_template_container():
+def test_connection_string_omits_the_password():
     assert (
         template_db.connection_string("agent_1")
-        == "postgresql://postgres:postgres@localhost:5434/agent_1"
+        == "postgresql://postgres@localhost:5434/agent_1"
     )

@@ -1,7 +1,6 @@
 """Disposable Postgres container holding a template database.
 
-Instances are created with `CREATE DATABASE ... TEMPLATE`, a file-level copy,
-so an agent gets its own database without restoring a dump each time.
+Instances are created with `CREATE DATABASE ... TEMPLATE`, a file-level copy.
 """
 
 import logging
@@ -170,7 +169,7 @@ def list_command() -> list[str]:
 
 def connection_string(name: str) -> str:
     return (
-        f"postgresql://{config.template_db_user}:{config.template_db_password}"
+        f"postgresql://{config.template_db_user}"
         f"@localhost:{config.template_db_port}/{name}"
     )
 
@@ -196,6 +195,8 @@ def wait_for_db(timeout: float = 120) -> bool:
                 "exec",
                 config.template_db_container,
                 "pg_isready",
+                "-h",
+                "127.0.0.1",
                 "-U",
                 config.template_db_user,
             ],
@@ -227,27 +228,36 @@ def ensure_container() -> bool:
     return wait_for_db()
 
 
-def template_exists() -> bool:
-    out = run_command(
-        psql_command(f"SELECT 1 FROM pg_database WHERE datname = '{TEMPLATE}'")
-    )
+def database_exists(name: str) -> bool:
+    out = run_command(psql_command(f"SELECT 1 FROM pg_database WHERE datname = '{name}'"))
 
     return bool(out and out.strip())
 
 
+def valid_dump(dump: Path) -> bool:
+    if dump.suffix != ".gz":
+        logger.error(f"Expected dump path to end with '.gz': {dump}")
+        return False
+
+    if not dump.is_file():
+        logger.error(f"Dump does not exist: {dump}")
+        return False
+
+    return True
+
+
 def seed(args: ScriptArgs) -> bool:
+    if args.template_src and not valid_dump(args.template_src):
+        return False
+
     if not ensure_container():
         return False
 
     dump = args.template_src
     if not dump:
         dump = gcs_utils.download_latest(buckets.DEV, config.dump_dir)
-        if not dump:
+        if not dump or not valid_dump(dump):
             return False
-
-    if dump.suffix != ".gz":
-        logger.error(f"Expected dump path to end with '.gz': {dump}")
-        return False
 
     started = time.monotonic()
     for step in seed_steps(dump):
@@ -265,7 +275,7 @@ def create(name: str) -> bool:
     if not ensure_container():
         return False
 
-    if not template_exists():
+    if not database_exists(TEMPLATE):
         logger.error(
             f"{TEMPLATE} does not exist; run "
             f"--script {scripts.TEMPLATE_DB} --template-action {scripts.SEED} first"
@@ -283,6 +293,10 @@ def create(name: str) -> bool:
 def drop(name: str) -> bool:
     if not ensure_container():
         return False
+
+    if not database_exists(name):
+        logger.info(f"{name} does not exist")
+        return True
 
     for step in drop_steps(name):
         if run_command(step) is None:
