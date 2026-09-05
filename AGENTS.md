@@ -1,8 +1,6 @@
 # otr-scripts agent guidance
 
-Run commands from the repository root with Python 3.14 and `uv`. Expand `$HOME`
-to the current user's home directory, then first read
-`$HOME/code/git/otr/AGENTS.md` and `$HOME/code/git/otr/.agents/WORKFLOW.md`.
+Run commands from the repository root with Python 3.14 and `uv`.
 
 `archive`, `recovery`, and `processor` operate on configured infrastructure.
 Never run them, upload archives, publish indexes, or deploy while developing.
@@ -28,8 +26,7 @@ needs. They never use the configured application database.
   `uv run python -m compileall -q src`, and focused
   `uv run --extra e2e python -m pytest <path>` tests. Use mocked unit tests for
   operational commands; do not replace execution with test collection.
-- Safe task databases use `template-db` exactly as documented in workspace
-  guidance.
+- Safe task databases use `template-db` on port `5434`.
 - `uv run --extra e2e python -m pytest -m e2e tests/e2e` needs Docker and GCS
   credentials and imports a public archive into an isolated container. Run only
   for an explicitly authorized archive validation.
