@@ -19,13 +19,15 @@ needs. They never use the configured application database.
 
 ## Commands
 
-- Setup: `uv venv --python 3.14` and `uv pip install .`. Add `'.[e2e]'` only for
-  external tests. Build a task `.env` from `.env.example`; do not copy secrets.
+- Setup: `uv venv --python 3.14` and `uv pip install .`. Install `'.[e2e]'` when
+  pytest-based checks are required. The extra supplies pytest; installing it
+  does not authorize external test execution. Build a task `.env` from
+  `.env.example`; do not copy secrets.
 - CLI: `uv run python src/main.py --script <operation> [options]`.
-- Checks: `ruff check src tests`, `black --check src tests`,
-  `python -m compileall -q src`, and focused `python -m pytest <path>` tests.
-  Use mocked unit tests for operational commands; do not replace execution with
-  test collection.
+- Checks: `uv run ruff check src tests`, `uv run black --check src tests`,
+  `uv run python -m compileall -q src`, and focused
+  `uv run python -m pytest <path>` tests. Use mocked unit tests for operational
+  commands; do not replace execution with test collection.
 - Safe task databases use `template-db` exactly as documented in workspace
   guidance.
 - `python -m pytest -m e2e tests/e2e` needs Docker and GCS credentials and
