@@ -1,8 +1,8 @@
 # otr-scripts agent guidance
 
-Run commands from the repository root with Python 3.14 and `uv`. First read
-`/home/stage/code/git/otr/AGENTS.md` and
-`/home/stage/code/git/otr/.agents/WORKFLOW.md`.
+Run commands from the repository root with Python 3.14 and `uv`. Expand `$HOME`
+to the current user's home directory, then first read
+`$HOME/code/git/otr/AGENTS.md` and `$HOME/code/git/otr/.agents/WORKFLOW.md`.
 
 `archive`, `recovery`, and `processor` operate on configured infrastructure.
 Never run them, upload archives, publish indexes, or deploy while developing.
