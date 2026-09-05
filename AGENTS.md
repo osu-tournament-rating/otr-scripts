@@ -26,13 +26,13 @@ needs. They never use the configured application database.
 - CLI: `uv run python src/main.py --script <operation> [options]`.
 - Checks: `uv run ruff check src tests`, `uv run black --check src tests`,
   `uv run python -m compileall -q src`, and focused
-  `uv run python -m pytest <path>` tests. Use mocked unit tests for operational
-  commands; do not replace execution with test collection.
+  `uv run --extra e2e python -m pytest <path>` tests. Use mocked unit tests for
+  operational commands; do not replace execution with test collection.
 - Safe task databases use `template-db` exactly as documented in workspace
   guidance.
-- `python -m pytest -m e2e tests/e2e` needs Docker and GCS credentials and
-  imports a public archive into an isolated container. Run only for an
-  explicitly authorized archive validation.
+- `uv run --extra e2e python -m pytest -m e2e tests/e2e` needs Docker and GCS
+  credentials and imports a public archive into an isolated container. Run only
+  for an explicitly authorized archive validation.
 
 ## Operations and code
 
