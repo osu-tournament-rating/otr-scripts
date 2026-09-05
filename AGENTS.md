@@ -26,7 +26,11 @@ needs. They never use the configured application database.
   `uv run python -m compileall -q src`, and focused
   `uv run --extra e2e python -m pytest <path>` tests. Use mocked unit tests for
   operational commands; do not replace execution with test collection.
-- Safe task databases use `template-db` on port `5434`.
+- Before database-dependent work, create a prepared database on port `5434`:
+  `uv run python src/main.py --script template-db --template-action create --template-name <name> --template-web-dir <task-web-checkout>`.
+  Supply an `otr-web` checkout with Bun and its dependencies installed. For a
+  scripts or processor task, supply the web checkout whose schema it expects.
+  Documentation-only work does not require a database.
 - `uv run --extra e2e python -m pytest -m e2e tests/e2e` needs Docker and GCS
   credentials and imports a public archive into an isolated container. Run only
   for an explicitly authorized archive validation.
@@ -42,9 +46,16 @@ needs. They never use the configured application database.
   running and drops only connections to the target database.
 - `processor` runs the configured image against configured PostgreSQL and
   RabbitMQ. Do not treat it as a test command.
-- `template-db seed` restores an approved archive into `otr_template`; `create`
-  copies it and reports its connection string, `drop` removes an instance, and
-  `list` shows instances and sizes. Instance names match
+- `template-db seed` explicitly restores an archive into `otr_template`.
+  `create` fetches the supplied web checkout's `origin` default-branch revision,
+  runs those migrations on the source template, clones it, and runs the task
+  checkout's migrations on the clone using its installed Drizzle tool. A local
+  per-user lock serializes seed and create across scripts checkouts.
+  Source migration failure blocks creation; repair or explicitly reseed manually.
+  Task migration failure retains the clone for inspection and returns failure.
+  Existing databases are never replaced. Migrate applies pending migrations; it
+  does not establish compatibility with every divergent schema or history.
+  `drop` removes an instance, and `list` shows instances and sizes. Names match
   `^[a-z][a-z0-9_]{0,30}$`.
 - Confirm environment, image tag, database container and name, web directory,
   bucket mapping, and RabbitMQ URL before a live operation.

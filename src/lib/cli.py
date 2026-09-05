@@ -18,6 +18,7 @@ class ScriptArgs:
     template_action: str | None
     template_name: str | None
     template_src: Path | None
+    template_web_dir: Path | None = None
 
 
 _script_options = [
@@ -68,6 +69,7 @@ def init() -> ScriptArgs:
         args.template_action,
         args.template_name,
         Path(args.template_src) if args.template_src else None,
+        Path(args.template_web_dir) if args.template_web_dir else None,
     )
 
 
@@ -139,6 +141,12 @@ def add_args(parser: ArgumentParser):
         "latest dev archive",
     )
 
+    template_args.add_argument(
+        "--template-web-dir",
+        type=Path,
+        help="Task otr-web checkout with installed dependencies (required for create)",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -177,8 +185,14 @@ def validate_template_db(args: Namespace, parser: ArgumentParser):
             "An action (--template-action) must be supplied to manage template databases"
         )
 
-    if args.template_action in (scripts.CREATE, scripts.DROP) and not args.template_name:
+    if (
+        args.template_action in (scripts.CREATE, scripts.DROP)
+        and not args.template_name
+    ):
         parser.error(
             f"An instance name (--template-name) must be supplied to "
             f"{args.template_action} a template database"
         )
+
+    if args.template_action == scripts.CREATE and not args.template_web_dir:
+        parser.error("A task web checkout (--template-web-dir) is required for create")

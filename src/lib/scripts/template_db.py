@@ -3,12 +3,21 @@
 Instances are created with `CREATE DATABASE ... TEMPLATE`, a file-level copy.
 """
 
+import fcntl
+import hashlib
+import io
+import json
 import logging
+import os
 import re
 import shlex
 import subprocess
+import tarfile
+import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import quote
 
 from lib.cli import ScriptArgs
 from lib.config import config
@@ -19,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 TEMPLATE = "otr_template"
 IMAGE = "postgres:17"
+MIGRATIONS = Path("apps/web/drizzle")
 
 reserved_names = {TEMPLATE, "postgres", "template0", "template1"}
 
@@ -229,7 +239,9 @@ def ensure_container() -> bool:
 
 
 def database_exists(name: str) -> bool:
-    out = run_command(psql_command(f"SELECT 1 FROM pg_database WHERE datname = '{name}'"))
+    out = run_command(
+        psql_command(f"SELECT 1 FROM pg_database WHERE datname = '{name}'")
+    )
 
     return bool(out and out.strip())
 
@@ -271,22 +283,127 @@ def seed(args: ScriptArgs) -> bool:
     return True
 
 
-def create(name: str) -> bool:
-    if not ensure_container():
-        return False
+@contextmanager
+def template_lock():
+    # A per-user container lock is shared by all scripts checkouts. Never unlink it:
+    # waiters must keep locking the same inode after the current owner exits.
+    lock_dir = Path(tempfile.gettempdir()) / f"otr-template-db-{os.getuid()}"
+    lock_dir.mkdir(mode=0o700, exist_ok=True)
+    key = hashlib.sha256(config.template_db_container.encode()).hexdigest()
+    with (lock_dir / f"{key}.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
-    if not database_exists(TEMPLATE):
+
+def git_output(web: Path, *args: str) -> bytes:
+    result = subprocess.run(
+        ["git", "-C", str(web), *args], capture_output=True, check=False
+    )
+    if result.returncode:
+        raise RuntimeError(
+            f"Default-branch migration preparation failed at git {args[0]}"
+        )
+    return result.stdout
+
+
+@contextmanager
+def default_migrations(web: Path):
+    remote = git_output(web, "ls-remote", "--symref", "origin", "HEAD").decode()
+    revision = None
+    for line in remote.splitlines():
+        value, _, ref = line.partition("\t")
+        if ref == "HEAD" and re.fullmatch(r"[0-9a-f]{40,64}", value):
+            revision = value
+    if revision is None or not remote.startswith("ref: refs/heads/"):
+        raise RuntimeError("Cannot resolve origin's default branch; creation stopped")
+    git_output(web, "fetch", "--no-tags", "origin", revision)
+    archive = git_output(web, "archive", revision, str(MIGRATIONS))
+    with tempfile.TemporaryDirectory(prefix="otr-default-migrations-") as directory:
+        with tarfile.open(fileobj=io.BytesIO(archive)) as files:
+            files.extractall(directory, filter="data")
+        logger.info(
+            f"Preparing source template from default-branch revision {revision}"
+        )
+        yield Path(directory) / MIGRATIONS
+
+
+def migrate(web: Path, migrations: Path, name: str) -> bool:
+    runner = web / "node_modules/drizzle-kit/bin.cjs"
+    if not runner.is_file() or not (migrations / "meta/_journal.json").is_file():
         logger.error(
-            f"{TEMPLATE} does not exist; run "
-            f"--script {scripts.TEMPLATE_DB} --template-action {scripts.SEED} first"
+            "Missing Drizzle installation or migration journal; install web dependencies first"
         )
         return False
+    env = os.environ.copy()
+    env["DATABASE_URL"] = (
+        f"postgresql://{quote(config.template_db_user, safe='')}:"
+        f"{quote(config.template_db_password, safe='')}"
+        f"@127.0.0.1:{config.template_db_port}/{name}"
+    )
+    # A standalone config avoids loading either checkout's application .env.
+    with tempfile.TemporaryDirectory(prefix="otr-migrate-") as directory:
+        migration_config = Path(directory) / "drizzle.config.ts"
+        migration_config.write_text(
+            "export default { dialect: 'postgresql', out: "
+            + json.dumps(str(migrations))
+            + ", dbCredentials: { url: process.env.DATABASE_URL } };\n"
+        )
+        result = subprocess.run(
+            [
+                "bun",
+                "--no-env-file",
+                str(runner),
+                "migrate",
+                "--config",
+                str(migration_config),
+            ],
+            cwd=directory,
+            env=env,
+            capture_output=True,
+            check=False,
+        )
+    if result.returncode:
+        logger.error(
+            f"Drizzle migration failed for {name} (exit {result.returncode}); creation stopped"
+        )
+        return False
+    return True
 
-    for step in create_steps(name):
-        if run_command(step) is None:
+
+def create(name: str, web: Path) -> bool:
+    web = web.resolve()
+    with template_lock():
+        if not ensure_container():
             return False
-
-    logger.info(f"Created {name}: {connection_string(name)}")
+        if database_exists(name):
+            logger.error(
+                f"{name} already exists; choose a new name or explicitly drop it"
+            )
+            return False
+        if not database_exists(TEMPLATE):
+            logger.error(
+                f"{TEMPLATE} does not exist; run "
+                f"--script {scripts.TEMPLATE_DB} --template-action {scripts.SEED} first"
+            )
+            return False
+        with default_migrations(web) as source:
+            if not migrate(web, source, TEMPLATE):
+                logger.error(
+                    "Repair or explicitly reseed the source template before retrying"
+                )
+                return False
+        for step in create_steps(name):
+            if run_command(step) is None:
+                return False
+        if not migrate(web, web / MIGRATIONS, name):
+            logger.error(
+                f"{name} was retained for inspection; it is not prepared for task use"
+            )
+            return False
+    logger.info(f"Created and migrated {name}: {connection_string(name)}")
     return True
 
 
@@ -329,7 +446,8 @@ def run(args: ScriptArgs) -> bool:
     guard()
 
     if args.template_action == scripts.SEED:
-        return seed(args)
+        with template_lock():
+            return seed(args)
 
     if args.template_action == scripts.LIST:
         return list_instances()
@@ -341,7 +459,14 @@ def run(args: ScriptArgs) -> bool:
         return False
 
     if args.template_action == scripts.CREATE:
-        return create(name)
+        if args.template_web_dir is None:
+            logger.error("--template-web-dir is required for create")
+            return False
+        try:
+            return create(name, args.template_web_dir)
+        except (OSError, RuntimeError, tarfile.TarError) as error:
+            logger.error(f"Template preparation failed: {error}")
+            return False
 
     if args.template_action == scripts.DROP:
         return drop(name)
