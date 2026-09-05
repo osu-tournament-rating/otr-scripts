@@ -298,11 +298,15 @@ def test_migrator_uses_explicit_local_url_without_loading_env(
 def test_lock_serializes_processes_and_releases_after_failure(tmp_path, monkeypatch):
     import multiprocessing
 
+    monkeypatch.setattr(template_db, "LOCK_DIR", tmp_path / "locks")
     monkeypatch.setattr(template_db.tempfile, "gettempdir", lambda: str(tmp_path))
     ctx = multiprocessing.get_context("fork")
     started, acquired = ctx.Event(), ctx.Event()
 
     def contender():
+        other = tmp_path / "other-temp"
+        other.mkdir()
+        monkeypatch.setattr(template_db.tempfile, "gettempdir", lambda: str(other))
         started.set()
         with template_db.template_lock():
             acquired.set()

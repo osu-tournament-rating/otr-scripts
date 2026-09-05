@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 TEMPLATE = "otr_template"
 IMAGE = "postgres:17"
 MIGRATIONS = Path("apps/web/drizzle")
+LOCK_DIR = Path("/tmp") / f"otr-template-db-{os.getuid()}"
 
 reserved_names = {TEMPLATE, "postgres", "template0", "template1"}
 
@@ -285,12 +286,11 @@ def seed(args: ScriptArgs) -> bool:
 
 @contextmanager
 def template_lock():
-    # A per-user container lock is shared by all scripts checkouts. Never unlink it:
-    # waiters must keep locking the same inode after the current owner exits.
-    lock_dir = Path(tempfile.gettempdir()) / f"otr-template-db-{os.getuid()}"
-    lock_dir.mkdir(mode=0o700, exist_ok=True)
+    # Ignore process-specific TMPDIR settings so all checkouts share one lock.
+    # Never unlink it: waiters must keep locking the same inode after owner exit.
+    LOCK_DIR.mkdir(mode=0o700, exist_ok=True)
     key = hashlib.sha256(config.template_db_container.encode()).hexdigest()
-    with (lock_dir / f"{key}.lock").open("a") as lock:
+    with (LOCK_DIR / f"{key}.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
             yield
