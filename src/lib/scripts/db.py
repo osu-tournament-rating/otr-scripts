@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 public_data_table_whitelist = [
     "drizzle.__drizzle_migrations",
     "public.beatmap_attributes",
+    "public.beatmap_files",
     "public.beatmaps",
     "public.beatmapsets",
     "public.game_scores",
