@@ -61,14 +61,14 @@ class Column:
     data_type: str
 
 
-def _compose(command: str):
+def _compose(command: str) -> int:
     profile = " --profile node-exporter" if config.environment == "production" else ""
-    subprocess.run(
+    return subprocess.run(
         f"docker compose{profile} {command}",
         shell=True,
         cwd=config.otr_web_dir,
         check=False,
-    )
+    ).returncode
 
 
 def _wait_for_db(timeout: float = 60) -> bool:
@@ -145,6 +145,10 @@ def _import(dump: Path, db_only: bool = False) -> bool:
         if returncode != 0:
             break
 
+    # The dump carries the schema of the tier it came from, so the deployed
+    # image's pending migrations must be replayed before the stack serves it.
+    migrated = returncode == 0 and _compose("--profile migrate run --rm migrate") == 0
+
     if not db_only:
         _compose("up -d")
 
@@ -155,8 +159,14 @@ def _import(dump: Path, db_only: bool = False) -> bool:
             f"{elapsed:.0f}s (exit code {returncode})"
         )
         return False
+    if not migrated:
+        logger.error(
+            f"Restored {dump.name} into {config.db_name} but migrating it failed "
+            f"after {elapsed:.0f}s; the stack is serving an outdated schema"
+        )
+        return False
 
-    logger.info(f"Restored {dump.name} into {config.db_name} in {elapsed:.0f}s")
+    logger.info(f"Restored and migrated {dump.name} into {config.db_name} in {elapsed:.0f}s")
     return True
 
 
