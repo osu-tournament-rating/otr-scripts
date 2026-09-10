@@ -166,7 +166,9 @@ def _import(dump: Path, db_only: bool = False) -> bool:
         )
         return False
 
-    logger.info(f"Restored and migrated {dump.name} into {config.db_name} in {elapsed:.0f}s")
+    logger.info(
+        f"Restored and migrated {dump.name} into {config.db_name} in {elapsed:.0f}s"
+    )
     return True
 
 
