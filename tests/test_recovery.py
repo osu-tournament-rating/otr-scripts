@@ -65,20 +65,56 @@ def test_restore_steps_target_only_the_configured_database():
     assert "-d otr_test -v ON_ERROR_STOP=1 --quiet" in load[-1]
 
 
+MIGRATE = "docker compose --profile migrate run --rm migrate"
+
+
 def test_db_only_restores_without_restarting_the_container(monkeypatch):
     commands = record_runs(monkeypatch)
 
     assert db._import(Path(f"/dumps/{KEEP}"), db_only=True) is True
 
-    assert shell_commands(commands) == ["docker compose up -d db"]
+    assert shell_commands(commands) == ["docker compose up -d db", MIGRATE]
     assert commands[1][:4] == ["docker", "exec", "otr-test-db", "pg_isready"]
-    assert len(commands) == 6
+    assert len(commands) == 7
 
 
-def test_failed_load_fails_the_import(monkeypatch):
-    record_runs(monkeypatch, fail_on="pipefail")
+def test_full_restore_migrates_before_the_stack_returns(monkeypatch):
+    commands = record_runs(monkeypatch)
+
+    assert db._import(Path(f"/dumps/{KEEP}")) is True
+
+    assert shell_commands(commands) == [
+        "docker compose down",
+        "docker compose up -d db",
+        MIGRATE,
+        "docker compose up -d",
+    ]
+
+
+def test_production_migrate_keeps_the_node_exporter_profile(monkeypatch):
+    commands = record_runs(monkeypatch)
+    monkeypatch.setattr(db.config, "environment", "production")
+
+    assert db._import(Path(f"/dumps/{KEEP}"), db_only=True) is True
+
+    assert shell_commands(commands)[-1] == (
+        "docker compose --profile node-exporter --profile migrate run --rm migrate"
+    )
+
+
+def test_failed_migration_fails_the_import_and_brings_the_stack_back(monkeypatch):
+    commands = record_runs(monkeypatch, fail_on="run --rm migrate")
+
+    assert db._import(Path(f"/dumps/{KEEP}")) is False
+
+    assert shell_commands(commands)[-2:] == [MIGRATE, "docker compose up -d"]
+
+
+def test_failed_load_fails_the_import_without_migrating(monkeypatch):
+    commands = record_runs(monkeypatch, fail_on="pipefail")
 
     assert db._import(Path(f"/dumps/{KEEP}"), db_only=True) is False
+    assert MIGRATE not in shell_commands(commands)
 
 
 def test_full_restart_brings_the_stack_back_after_a_failure(monkeypatch):

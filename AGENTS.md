@@ -41,9 +41,11 @@ needs. They never use the configured application database.
   `public_data_table_whitelist`, publish a SHA-256 file, and refresh the HTML
   index. Dev archives mirror production data except `dev_secret_columns`, which
   are reinserted redacted. Add every new credential column to that list.
-- `recovery` stops services and replaces its configured database. It removes
-  only older archives of the same kind. `--db-only` leaves the Compose stack
-  running and drops only connections to the target database.
+- `recovery` stops services, replaces its configured database, and replays the
+  deployed image's pending migrations through the Compose `migrate` profile
+  before the stack returns; a failed migration fails the run. It removes only
+  older archives of the same kind. `--db-only` leaves the Compose stack running
+  and drops only connections to the target database.
 - `processor` runs the configured image against configured PostgreSQL and
   RabbitMQ. Do not treat it as a test command.
 - `template-db seed` explicitly restores an archive into `otr_template`.
