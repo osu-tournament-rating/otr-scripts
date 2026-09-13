@@ -28,6 +28,19 @@ Unit tests need neither Docker nor credentials:
 python -m pytest tests -m 'not e2e'
 ```
 
+## Public replicas
+
+Public archives include beatmap attribute results and their `beatmap_files`
+source records so the results retain valid source relationships and checksum
+provenance. Source records contain content keys and public source URLs; they
+do not contain the `.osu` file bytes, local directories, GCP bucket names, or
+credentials. Operational `beatmap_attribute_jobs` rows remain excluded.
+
+Deploy this whitelist update before exporting attributes from the new web
+schema. It also supports the earlier schema: the export uses matching table
+patterns without `--strict-names`, so a missing `beatmap_files` table does not
+prevent exporting the existing public tables.
+
 ## Dev replicas
 
 Dev archives mirror production: every table and every row, audits and logs
